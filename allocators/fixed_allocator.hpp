@@ -97,11 +97,9 @@ template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
 auto 
 fixed_allocator<T, ChunksNum, FallbackAllocator>::allocate(size_type n, void* hint) -> pointer
 {
-    assert(1 == n);
-
     if (!pool_)
         pool_.reset(new fixed_pool(ChunksNum, sizeof(T)));
-    else if (pool_->chunk_size() != n)
+    else if (1 != n || pool_->chunk_size() != sizeof(T))
         return super::allocate(n, hint);
 
     pointer result = static_cast<pointer>(pool_->allocate());

@@ -1,16 +1,19 @@
 #include "fixed_pool.hpp"
 
+#include <iostream>
+
 namespace tcl { namespace allocators {
 
 fixed_pool::fixed_pool(size_type chunks_num, size_t chunk_size)
-    : chunks_num_(chunks_num_)
+    : chunks_num_(chunks_num)
     , chunk_size_(chunk_size > sizeof(size_type) ? chunk_size : sizeof(size_type))
-    , chunks_(new unsigned char[chunk_size_ * chunks_num_])
+    , total_size_(chunk_size_ * chunks_num_)
+    , chunks_(new unsigned char[total_size_])
 {
     unsigned char* p = chunks_.get();
     size_type i = 0;
 
-    for(; i<chunks_num; p += chunk_size_)
+    for(; i < chunks_num_; p += chunk_size_)
         *reinterpret_cast<size_type*>(p) = ++i;
 
     chunk_ref new_head;
@@ -30,7 +33,7 @@ void* fixed_pool::allocate()
         if (old_head.idx_ == chunks_num_)
             return 0;
 
-        res = reinterpret_cast<void*>(chunks_.get() + chunk_size_ * old_head.idx_);
+        res = chunks_.get() + chunk_size_ * old_head.idx_;
         new_head.idx_ = *reinterpret_cast<size_type*>(res);
         new_head.generation_ = old_head.generation_ + 1;
     }

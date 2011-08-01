@@ -13,14 +13,16 @@ namespace tcl { namespace allocators {
 class fixed_pool
 {
 public:
-    // this typedefs control ability of chunk_ref to fit
-    // to 8 bytes limits.
+    // This typedefs control ability of chunk_ref to fit
+    // to 4 bytes limits. boost::atomic<chunk_ref> will use spin-lock 
+    // version if it more then 4 bytes :(
     typedef boost::uint16_t size_type;
     typedef boost::uint16_t generation_type;
 
     typedef boost::int16_t difference_type;
 
-    /// Construct pool with fixed number of chunks
+    /// Construct pool with fixed number of fixed size chunks.
+    /// Build free list upon it
     fixed_pool(size_type chunks_num, size_t chunk_size);
 
     void* allocate();
@@ -34,7 +36,7 @@ public:
     bool is_my_ptr(void* p) const
     {
         // TODO: Optimize
-        return p >= chunks_.get() && p <= chunks_.get() + chunk_size_ * chunks_num_;
+        return p >= chunks_.get() && p < chunks_.get() + total_size_;
     }
 
 private:
@@ -63,6 +65,7 @@ private:
 
     const size_type chunks_num_;              //!< Number of chunks in \c chunks_
     const size_t chunk_size_;                 //!< Each chunk size
+    const size_t total_size_;                 //!< chunk_size_ * chunks_num_
     std::unique_ptr<unsigned char[]> chunks_; //!< Memory block with implicit chunks
 
     boost::atomic<chunk_ref> head_;           //!< Index of first free chunk with generation number

@@ -11,7 +11,7 @@
 const size_t attempts = 15000;
 
 typedef boost::chrono::steady_clock clock_type;
-typedef long long test_type;
+typedef long double test_type;
 
 using namespace tcl::allocators;
 
