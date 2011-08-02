@@ -14,6 +14,9 @@ namespace tcl { namespace allocators {
 /// \c deallocate and \c is_my_ptr.
 /// See http://en.wikipedia.org/wiki/Free_list
 ///
+/// \tparam - Will be rebounded and used to allocate memory on construcion, and also for
+/// self deallocation on destroy.
+///
 template<typename Allocator = std::allocator<char>>
 class fixed_pool : Allocator
 {
