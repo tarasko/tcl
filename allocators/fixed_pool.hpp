@@ -3,20 +3,26 @@
 #include <boost/atomic.hpp>
 #include <boost/cstdint.hpp>
 
-#include <cassert>
 #include <memory>
+#include <cassert>
 
 namespace tcl { namespace allocators {
 
 /// \brief Lock free pool of fixed size memory chunks.
 ///
-/// It uses common free list algorithm to achieve O(1) complexity
-/// for \c allocate, \c deallocate and \c is_my_ptr.
+/// It uses common free list algorithm to achieve O(1) complexity for \c allocate,
+/// \c deallocate and \c is_my_ptr.
 /// See http://en.wikipedia.org/wiki/Free_list
 ///
-/// \todo Add Allocator template parameter. Add ability to pass allocator to constructor
-class fixed_pool
+template<typename Allocator = std::allocator<char>>
+class fixed_pool : Allocator
 {
+    typedef Allocator allocator_type;
+    typedef fixed_pool<Allocator> self_type;
+
+    typedef typename Allocator::template rebind<char>::other char_allocator_type;
+    typedef typename Allocator::template rebind<self_type>::other self_allocator_type;
+
 public:
     // This typedefs control ability of chunk_ref to fit
     // to 4 bytes limits. boost::atomic<chunk_ref> will use spin-lock
@@ -28,7 +34,8 @@ public:
 
     /// Construct pool with fixed number of fixed size chunks.
     /// Build free list upon it
-    fixed_pool(size_type chunks_num, size_t chunk_size);
+    fixed_pool(size_type chunks_num, size_t chunk_size, const Allocator& allocator = Allocator());
+    ~fixed_pool();
 
     /// Allocate one block. If there are no free block return 0.
     void* allocate();
@@ -43,6 +50,9 @@ public:
     /// Check if block pointed by p belongs to this memory pool.
     bool is_my_ptr(void* p) const;
 
+    /// Return copy of allocator
+    allocator_type get_allocator() const;
+
 private:
     friend void intrusive_ptr_add_ref(fixed_pool* p)
     {
@@ -52,7 +62,11 @@ private:
     friend void intrusive_ptr_release(fixed_pool* p)
     {
         if (p->ref_count_.fetch_sub(1) == 1)
-            delete p;
+        {
+            typename fixed_pool::self_allocator_type allocator(p->get_allocator());
+            p->~fixed_pool();
+            allocator.deallocate(p, 1);
+        }
     }
 
     // noncopyable, nonassignable, no move support
@@ -67,23 +81,103 @@ private:
         generation_type generation_; //!< Resolution for ABA problem.
     };
 
-    const size_type chunks_num_;              //!< Number of chunks in \c chunks_
-    const size_t chunk_size_;                 //!< Each chunk size
-    const size_t total_size_;                 //!< chunk_size_ * chunks_num_
-    std::unique_ptr<unsigned char[]> chunks_; //!< Memory block with implicit chunks
+    const size_type chunks_num_;     //!< Number of chunks in \c chunks_
+    const size_t chunk_size_;        //!< Each chunk size
+    const size_t total_size_;        //!< chunk_size_ * chunks_num_
+    char*        chunks_;            //!< Memory block with implicit chunks
 
-    boost::atomic<chunk_ref> head_;           //!< Index of first free chunk with generation number
-    boost::atomic_int ref_count_;             //!< Reference counter for boost::intrusive_ptr
+    boost::atomic<chunk_ref> head_;  //!< Index of first free chunk with generation number
+    boost::atomic_int ref_count_;    //!< Reference counter for boost::intrusive_ptr
 };
 
-inline size_t fixed_pool::chunk_size() const
+template<typename Allocator>
+fixed_pool<Allocator>::fixed_pool(size_type chunks_num, size_t chunk_size, const Allocator& allocator)
+    : Allocator(allocator)
+    , chunks_num_(chunks_num)
+    , chunk_size_(chunk_size > sizeof(size_type) ? chunk_size : sizeof(size_type))
+    , total_size_(chunk_size_ * chunks_num_)
+{
+    // Allocate char array using provided self rebounded allocator
+    char_allocator_type char_allocator(*this);
+    chunks_ = char_allocator.allocate(total_size_);
+
+    // Build steal index to next free block, for all blocks
+    char* p = chunks_;
+    size_type i = 0;
+
+    for(; i < chunks_num_; p += chunk_size_)
+        *reinterpret_cast<size_type*>(p) = ++i;
+
+    // Make head_ to point to first free block
+    chunk_ref new_head;
+    new_head.idx_ = 0;
+    new_head.generation_ = 0;
+    head_.store(new_head, boost::memory_order_relaxed);
+}
+
+template<typename Allocator>
+fixed_pool<Allocator>::~fixed_pool()
+{
+    char_allocator_type char_allocator(*this);
+    char_allocator.deallocate(chunks_, total_size_);
+}
+
+template<typename Allocator>
+void* fixed_pool<Allocator>::allocate()
+{
+    chunk_ref old_head = head_.load(boost::memory_order_relaxed);
+    chunk_ref new_head;
+
+    void* res;
+
+    do {
+        if (old_head.idx_ == chunks_num_)
+            return 0;
+
+        res = chunks_ + chunk_size_ * old_head.idx_;
+        new_head.idx_ = *reinterpret_cast<size_type*>(res);
+        new_head.generation_ = old_head.generation_ + 1;
+    }
+    while(!head_.compare_exchange_weak(old_head, new_head));
+
+    return res;
+}
+
+template<typename Allocator>
+void fixed_pool<Allocator>::deallocate(void* p)
+{
+    assert("Ensure that p doesn`t violate lower bound" && (void*)p >= chunks_.get());
+
+    chunk_ref old_head = head_.load(boost::memory_order_relaxed);
+    chunk_ref new_head;
+
+    size_type& new_idx = *reinterpret_cast<size_type*>(p);
+
+    do {
+        new_idx = old_head.idx_;
+
+        new_head.idx_ = (reinterpret_cast<char*>(p) - chunks_) / chunk_size_;
+        new_head.generation_ = old_head.generation_ + 1;
+    }
+    while(!head_.compare_exchange_weak(old_head, new_head));
+}
+
+template<typename Allocator>
+size_t fixed_pool<Allocator>::chunk_size() const
 {
     return chunk_size_;
 }
 
-inline bool fixed_pool::is_my_ptr(void* p) const
+template<typename Allocator>
+bool fixed_pool<Allocator>::is_my_ptr(void* p) const
 {
-    return p >= chunks_.get() && p < chunks_.get() + total_size_;
+    return p >= chunks_ && p < chunks_ + total_size_;
+}
+
+template<typename Allocator>
+auto fixed_pool<Allocator>::get_allocator() const -> allocator_type
+{
+    return *this;
 }
 
 }}

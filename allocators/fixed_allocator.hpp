@@ -22,7 +22,6 @@ namespace tcl { namespace allocators {
 /// \tparam ChunksNum - number of chunks in memory pool
 /// \tparam FallbackAllocator - Use it if we cannot allocate from memory pool
 ///
-/// \todo Pass FallbackAllocator to memory pool.
 /// \todo Resolve msvc problem access to other.pool_
 template<
     typename T
@@ -33,6 +32,13 @@ class fixed_allocator : FallbackAllocator
 {
     typedef FallbackAllocator super;
 
+    typedef fixed_pool<FallbackAllocator>
+        fixed_pool_type;
+    typedef boost::intrusive_ptr<fixed_pool_type>
+        fixed_pool_ptr;
+    typedef typename FallbackAllocator::template rebind<fixed_pool_type>::other
+        fixed_pool_allocator;
+
 public:
     typedef T value_type;
 
@@ -42,8 +48,8 @@ public:
     typedef const T* const_pointer;
     typedef const T& const_reference;
 
-    typedef fixed_pool::size_type size_type;
-    typedef fixed_pool::difference_type difference_type;
+    typedef typename fixed_pool_type::size_type size_type;
+    typedef typename fixed_pool_type::difference_type difference_type;
 
     static const unsigned short chunks_num = ChunksNum;
 
@@ -74,7 +80,7 @@ public:
     void destroy(pointer p);
 
 private:
-    boost::intrusive_ptr<fixed_pool> pool_;
+    fixed_pool_ptr pool_;
 };
 
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
@@ -106,7 +112,20 @@ auto
 fixed_allocator<T, ChunksNum, FallbackAllocator>::allocate(size_type n, void* hint) -> pointer
 {
     if (!pool_)
-        pool_.reset(new fixed_pool(ChunksNum, sizeof(T)));
+    {
+        fixed_pool_allocator allocator(static_cast<super&>(*this));
+        fixed_pool_type* p = allocator.allocate(1);
+        try {
+            p = new (p) fixed_pool_type(ChunksNum, sizeof(T));
+        }
+        catch(...)
+        {
+            allocator.deallocate(p, 1);
+            throw;
+        }
+
+        pool_.reset(p);
+    }
     else if (1 != n || pool_->chunk_size() != sizeof(T))
         return super::allocate(n, hint);
 
