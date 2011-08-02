@@ -11,6 +11,19 @@
 
 namespace tcl { namespace allocators {
 
+/// \brief Fixed size, thread safe, standart compliant memory pool allocator.
+///
+/// All instances and copies of fixed_allocator<...> shares same memory pool.
+/// Memory pool is created on first allocation attempt. After this memory pool
+/// is tuned to specific object size. All attempts to allocate something that
+/// cannot be satisfied by memory pool will be redirected to FallbackAllocator.
+///
+/// \tparam T - type of objects to allocate. Used to evaluate object size
+/// \tparam ChunksNum - number of chunks in memory pool
+/// \tparam FallbackAllocator - Use it if we cannot allocate from memory pool
+///
+/// \todo Pass FallbackAllocator to memory pool.
+/// \todo Resolve msvc problem access to other.pool_
 template<
     typename T
   , unsigned short ChunksNum = 64
@@ -60,10 +73,6 @@ public:
     void construct(pointer p, const_reference val);
     void destroy(pointer p);
 
-    // TODO: CRAP!
-    // I want to hide this
-    boost::intrusive_ptr<fixed_pool> pool() const;
-
 private:
     boost::intrusive_ptr<fixed_pool> pool_;
 };
@@ -76,7 +85,7 @@ fixed_allocator<T, ChunksNum, FallbackAllocator>::fixed_allocator()
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
 template<typename T1, typename FallbackAllocator1>
 fixed_allocator<T, ChunksNum, FallbackAllocator>::fixed_allocator(const fixed_allocator<T1, ChunksNum, FallbackAllocator1>& other)
-: pool_(other.pool())
+: pool_(other.pool_)
 {
 }
 
@@ -87,14 +96,13 @@ auto fixed_allocator<T, ChunksNum, FallbackAllocator>::address(reference x) cons
 }
 
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
-auto 
-fixed_allocator<T, ChunksNum, FallbackAllocator>::address(const_reference x) const -> const_pointer
+auto fixed_allocator<T, ChunksNum, FallbackAllocator>::address(const_reference x) const -> const_pointer
 {
     return &x;
 }
 
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
-auto 
+auto
 fixed_allocator<T, ChunksNum, FallbackAllocator>::allocate(size_type n, void* hint) -> pointer
 {
     if (!pool_)
@@ -110,7 +118,7 @@ fixed_allocator<T, ChunksNum, FallbackAllocator>::allocate(size_type n, void* hi
 }
 
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
-void 
+void
 fixed_allocator<T, ChunksNum, FallbackAllocator>::deallocate(pointer p, size_type n)
 {
     assert(1 == n);
@@ -123,7 +131,7 @@ fixed_allocator<T, ChunksNum, FallbackAllocator>::deallocate(pointer p, size_typ
 }
 
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
-auto 
+auto
 fixed_allocator<T, ChunksNum, FallbackAllocator>::max_size() const -> size_type
 {
     // unimplemented
@@ -131,24 +139,17 @@ fixed_allocator<T, ChunksNum, FallbackAllocator>::max_size() const -> size_type
 }
 
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
-void 
+void
 fixed_allocator<T, ChunksNum, FallbackAllocator>::construct(pointer p, const_reference val)
 {
     new ((void*)p) T(val);
 }
 
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
-void 
+void
 fixed_allocator<T, ChunksNum, FallbackAllocator>::destroy(pointer p)
 {
     ((T*)p)->~T();
-}
-
-template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
-boost::intrusive_ptr<fixed_pool> 
-fixed_allocator<T, ChunksNum, FallbackAllocator>::pool() const
-{
-    return pool_;
 }
 
 }}
