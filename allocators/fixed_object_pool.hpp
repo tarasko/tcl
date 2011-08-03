@@ -2,7 +2,6 @@
 
 #include <boost/atomic.hpp>
 #include <boost/cstdint.hpp>
-#include <boost/mpl/if.hpp>
 
 #include <cassert>
 #include <memory>

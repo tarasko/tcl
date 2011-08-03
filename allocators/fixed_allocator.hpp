@@ -4,10 +4,7 @@
 
 #include <boost/intrusive_ptr.hpp>
 
-#include <list>
 #include <limits>
-
-#include <stdlib.h>
 
 namespace tcl { namespace allocators {
 
