@@ -5,6 +5,7 @@
 #include "../lf_mpmc_queue.hpp"
 #include "../lb_queue.hpp"
 #include "../lb_fg_queue.hpp"
+#include "../../allocators/fixed_allocator.hpp"
 
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
@@ -43,7 +44,8 @@ void measured_pop_proc(Container& c, boost::barrier& b, const char* name)
 	int total = 0;
 	for(int i = 0; i<NUM_ATTEMPTS;)
 	{
-		if(c.try_pop())
+        int value;
+		if(c.try_pop(value))
             ++i;
         ++total;
 	}
@@ -69,7 +71,7 @@ void measured_push_proc(Container& c, boost::barrier& b, const char* name)
 
 template<typename Container>
 void do_spsc_test(const char* name)
-{
+{ 
     Container c;
     boost::barrier b(2);
 
@@ -82,11 +84,12 @@ void do_spsc_test(const char* name)
 
 int main(int argc, char* argv[])
 {
-    do_spsc_test<lf_stack_hp<int>>("lf_stack_refcnt");
-    do_spsc_test<lf_stack_refcnt<int>>("lf_stack_refcnt");
-    do_spsc_test<lf_spsc_queue<int>>("lf_spsc_queue spsc");
-    do_spsc_test<lb_queue<int>>("lb_queue spsc");
-    do_spsc_test<lb_fg_queue<int>>("lb_fg_queue spsc");
-    do_spsc_test<lf_mpmc_queue<int>>("lb_fg_queue spsc");
+    do_spsc_test<lb_stack<int>>("lb_stack");
+    do_spsc_test<lf_stack_hp<int, tcl::allocators::fixed_allocator<int, 10000>>>("lf_stack_hp");
+    //do_spsc_test<lf_stack_refcnt<int>>("lf_stack_refcnt");
+    //do_spsc_test<lf_spsc_queue<int>>("lf_spsc_queue spsc");
+    //do_spsc_test<lb_queue<int>>("lb_queue spsc");
+    //do_spsc_test<lb_fg_queue<int>>("lb_fg_queue spsc");
+    //do_spsc_test<lf_mpmc_queue<int>>("lb_fg_queue spsc");
 	return 0;
 }

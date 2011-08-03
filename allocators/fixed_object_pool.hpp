@@ -141,7 +141,7 @@ auto fixed_object_pool<T, Allocator>::allocate() -> pointer
 template<typename T, typename Allocator>
 void fixed_object_pool<T, Allocator>::deallocate(pointer p)
 {
-    assert("Ensure that p doesn`t violate lower bound" && (void*)p >= chunks_.get());
+    assert("Ensure that p doesn`t violate lower bound" && (void*)p >= chunks_);
 
     chunk_ref old_head = head_.load(boost::memory_order_relaxed);
     chunk_ref new_head;

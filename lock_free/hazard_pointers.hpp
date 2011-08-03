@@ -16,8 +16,8 @@
 namespace tcl { namespace lock_free {
 
 /// \brief Container of hazard pointers.
-template<typename T, size_t Size>
-class hazard_pointers
+template<typename T, size_t Size, typename Allocator>
+class hazard_pointers : Allocator
 {
 	struct context
 	{
@@ -37,7 +37,7 @@ class hazard_pointers
 	hazard_pointers& operator=(const hazard_pointers&);
 
 public:
-	hazard_pointers();
+	hazard_pointers(const Allocator& allocator);
 	~hazard_pointers();
 
 	/// \brief Find free hazard pointer and allocate it for scope.
@@ -63,12 +63,15 @@ public:
 	bool outstanding_hp_for(const T* ptr) const;
 	void reclaim_later(T* ptr);
 
+    /// \brief Return allocator for freeing objects
+    Allocator get_allocator();
+
 private:
 	context hps_[Size];
 };
 
-template<typename T, size_t Size>
-hazard_pointers<T, Size>::scoped_allocator::scoped_allocator(hazard_pointers& hps)
+template<typename T, size_t Size, typename Allocator>
+hazard_pointers<T, Size, Allocator>::scoped_allocator::scoped_allocator(hazard_pointers& hps)
 {
 	for(size_t i=0; i<Size; ++i)
 	{
@@ -87,26 +90,27 @@ hazard_pointers<T, Size>::scoped_allocator::scoped_allocator(hazard_pointers& hp
 	throw std::runtime_error("no free hazard pointers");
 }
 
-template<typename T, size_t Size>
-hazard_pointers<T, Size>::scoped_allocator::~scoped_allocator()
+template<typename T, size_t Size, typename Allocator>
+hazard_pointers<T, Size, Allocator>::scoped_allocator::~scoped_allocator()
 {
 	ctx_->ptr_.store(0, boost::memory_order_relaxed);
 	ctx_->id_.store(0, boost::memory_order_release);
 }
 
-template<typename T, size_t Size>
-boost::atomic<const T*>& hazard_pointers<T, Size>::scoped_allocator::ref()
+template<typename T, size_t Size, typename Allocator>
+boost::atomic<const T*>& hazard_pointers<T, Size, Allocator>::scoped_allocator::ref()
 {
 	return ctx_->ptr_;
 }
 
-template<typename T, size_t Size>
-hazard_pointers<T, Size>::hazard_pointers()
+template<typename T, size_t Size, typename Allocator>
+hazard_pointers<T, Size, Allocator>::hazard_pointers(const Allocator& allocator)
+    : Allocator(allocator)
 {
 }
 
-template<typename T, size_t Size>
-hazard_pointers<T, Size>::~hazard_pointers()
+template<typename T, size_t Size, typename Allocator>
+hazard_pointers<T, Size, Allocator>::~hazard_pointers()
 {
 	// Just assert that there are no hazard pointers in use
 	for (size_t i=0; i<Size; ++i)
@@ -118,8 +122,8 @@ hazard_pointers<T, Size>::~hazard_pointers()
 	}
 }
 
-template<typename T, size_t Size>
-bool hazard_pointers<T, Size>::outstanding_hp_for(const T* ptr) const
+template<typename T, size_t Size, typename Allocator>
+bool hazard_pointers<T, Size, Allocator>::outstanding_hp_for(const T* ptr) const
 {
 	for (size_t i=0; i<Size; ++i)
 	{
@@ -131,11 +135,24 @@ bool hazard_pointers<T, Size>::outstanding_hp_for(const T* ptr) const
 	return false;
 }
 
-template<typename T, size_t Size>
-void hazard_pointers<T, Size>::reclaim_later(T* ptr)
+template<typename T, size_t Size, typename Allocator>
+void hazard_pointers<T, Size, Allocator>::reclaim_later(T* ptr)
 {
 	auto& rl = get_reclaim_list();
-	rl.push_back(hazard_pointers_reclaim_node(ptr));
+
+    // Push ptr to reclaim list, use our allocator to deallocate object
+    Allocator allocator(*this);
+
+    auto deleter = 
+        [allocator](void* ptr) -> void 
+        {
+            Allocator allocator1(allocator);  // CRAP!!!!
+            allocator1.deallocate(static_cast<T*>(ptr), 1);
+        };
+
+	rl.push_back(
+        hazard_pointers_reclaim_node(ptr, deleter) 
+      );
 
 	if (rl.size() < delete_threashold_size)
 		return;
@@ -154,6 +171,12 @@ void hazard_pointers<T, Size>::reclaim_later(T* ptr)
 	}
 
 	rl.erase(e, rl.end());
+}
+
+template<typename T, size_t Size, typename Allocator>
+Allocator hazard_pointers<T, Size, Allocator>::get_allocator()
+{
+    return *this;
 }
 
 }}

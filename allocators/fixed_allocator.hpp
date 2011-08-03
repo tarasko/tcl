@@ -77,6 +77,9 @@ public:
     void destroy(pointer p);
 
 private:
+#ifdef _MSC_VER
+    friend class fixed_allocator;
+#endif
     fixed_pool_ptr pool_;
 };
 
@@ -88,8 +91,9 @@ fixed_allocator<T, ChunksNum, FallbackAllocator>::fixed_allocator()
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
 template<typename T1, typename FallbackAllocator1>
 fixed_allocator<T, ChunksNum, FallbackAllocator>::fixed_allocator(const fixed_allocator<T1, ChunksNum, FallbackAllocator1>& other)
-: pool_(other.pool_)
 {
+    if (other.pool_)
+        pool_.reset(reinterpret_cast<fixed_pool_type*>(other.pool_.get(), true));
 }
 
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
@@ -151,7 +155,7 @@ auto
 fixed_allocator<T, ChunksNum, FallbackAllocator>::max_size() const -> size_type
 {
     // unimplemented
-    return std::numeric_limits<size_type>::max();
+    return std::numeric_limits<size_type>::max BOOST_PREVENT_MACRO_SUBSTITUTION();
 }
 
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>

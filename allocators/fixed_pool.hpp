@@ -151,7 +151,7 @@ void* fixed_pool<Allocator>::allocate()
 template<typename Allocator>
 void fixed_pool<Allocator>::deallocate(void* p)
 {
-    assert("Ensure that p doesn`t violate lower bound" && (void*)p >= chunks_.get());
+    assert("Ensure that p doesn`t violate lower bound" && (void*)p >= chunks_);
 
     chunk_ref old_head = head_.load(boost::memory_order_relaxed);
     chunk_ref new_head;

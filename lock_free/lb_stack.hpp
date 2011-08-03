@@ -11,24 +11,23 @@ class lb_stack
 public:
 	void push(const T& val)
 	{
-		std::shared_ptr<T> val_ptr(new T(val));
 		boost::lock_guard<boost::mutex> g(guard_);
-		stack_.push(val_ptr);
+		stack_.push(val);
 	}
 
-	std::shared_ptr<T> try_pop()
+	bool try_pop(T& result)
 	{
 		boost::lock_guard<boost::mutex> g(guard_);
 		if (stack_.empty())
-			return std::shared_ptr<T>();
+			return false;
 
-		auto ret = std::move(stack_.top());
+		result = std::move(stack_.top());
 		stack_.pop();
-		return ret;
+		return true;
 	}
 
 private:
-	std::stack<std::shared_ptr<T>> stack_;
+	std::stack<T> stack_;
 	boost::mutex guard_;
 };
 
