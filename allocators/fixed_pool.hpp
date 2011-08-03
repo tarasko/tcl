@@ -17,6 +17,8 @@ namespace tcl { namespace allocators {
 /// \tparam - Will be rebounded and used to allocate memory on construcion, and also for
 /// self deallocation on destroy.
 ///
+/// \todo - Assert in destructor that all chunks are currently free.
+/// \todo - More assert in deallocate
 template<typename Allocator = std::allocator<char>>
 class fixed_pool : Allocator
 {
@@ -50,7 +52,7 @@ public:
     /// Return chunk size
     size_t chunk_size() const;
 
-    /// Check if block pointed by p belongs to this memory pool.
+    /// Check if chunk pointed by p belongs to this memory pool.
     bool is_my_ptr(void* p) const;
 
     /// Return copy of allocator

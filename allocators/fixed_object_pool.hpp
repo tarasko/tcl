@@ -6,39 +6,44 @@
 
 #include <cassert>
 #include <memory>
+#include <stdexcept>
 
 namespace tcl { namespace allocators {
 
+/// \brief This exception thrown when no more free object left in fixed_object_pool
+struct no_more_objects : std::runtime_error
+{
+    no_more_objects() : std::runtime_error("no more objects in fixed_object_pool") {}
+};
+
 /// \brief Lock free pool of objects.
 ///
-/// \tparam T - Object type
-/// \tparam ConstructObject - if true then call default constructor for all
-/// object after pool has been created. In this case T must be default
-/// constructible.
+/// \tparam T - Object type, must be default constructible.
+/// \tparam Allocator - Used to allocate memory block for objects.
 ///
-/// @note Both \c allocate and \c deallocate have O(1) complexity.
-template<typename T, bool ConstructObjects = false>
-class fixed_object_pool
+/// \todo - Assert in destructor that all objects are currently free.
+/// \todo - More assert in deallocate
+/// \todo - We must distinguish scoped_allocator_adapter and in that
+/// case forward allocator to T constructor
+template<typename T, typename Allocator = std::allocator<char>>
+class fixed_object_pool : Allocator
 {
 public:
-    // this typedefs control ability of chunk_ref to fit
-    // to 8 bytes limits.
+    // This typedefs control ability of chunk_ref to fit
+    // to 4 bytes limits. boost::atomic<chunk_ref> will use spin-lock
+    // version if it more then 4 bytes :(
     typedef boost::uint16_t size_type;
     typedef boost::uint16_t generation_type;
 
-    typedef typename boost::mpl::if_c<
-        ConstructObjects
-      , T*
-      , void*
-      >::type pointer_type;
+    typedef T value_type;
+    typedef T* pointer;
+    typedef T& reference;
 
-    fixed_object_pool(size_type chunks_num);
+    fixed_object_pool(size_type chunks_num, const Allocator& allocator = Allocator());
     ~fixed_object_pool();
 
-    /// Return uninialized storage for object T
-    /// Use placement constructor to create object
-    pointer_type allocate();
-    void deallocate(pointer_type p);
+    pointer allocate();
+    void deallocate(pointer p);
 
 private:
     // noncopyable, nonassignable
@@ -49,84 +54,84 @@ private:
     fixed_object_pool& operator=(const fixed_object_pool&);
     fixed_object_pool& operator=(fixed_object_pool&&);
 
+    // TODO: Will proper allignment increase performance?
+    // On Sparc I guess we will get exception?
+    struct chunk
+    {
+        T obj_;
+        size_type next_free_;
+    };
+
     struct chunk_ref
     {
         size_type       idx_;        //!< Index of first available chunk
         generation_type generation_; //!< Help to resolve ABA problem.
     };
 
-    // chunk size must be min(sizeof(T), sizeof(size_type))
-    static const int chunk_size = sizeof(T) < sizeof(size_type) ? sizeof(size_type) : sizeof(T);
+    typedef typename Allocator::template rebind<chunk>::other chunk_allocator_type;
 
-    std::unique_ptr<unsigned char[]> chunks_;
+    chunk*    chunks_;
     size_type chunks_num_;
 
-    boost::atomic<chunk_ref> head_; //!< Index of first free chunk with generation number
+    boost::atomic<chunk_ref> head_;  //!< Index of first free chunk with generation number
 };
 
-template<typename T, bool ConstructObjects>
-fixed_object_pool<T, ConstructObjects>::fixed_object_pool(size_type chunks_num)
-    : chunks_(new unsigned char[chunk_size * chunks_num])
+template<typename T, typename Allocator>
+fixed_object_pool<T, Allocator>::fixed_object_pool(size_type chunks_num, const Allocator& allocator)
+    : Allocator(allocator)
     , chunks_num_(chunks_num)
 {
-    unsigned char* p = chunks_.get();
-    size_type i = 0;
+    chunk_allocator_type chunk_allocator(*this);
+    chunks_ = chunk_allocator.allocate(chunks_num_);
 
-    for(; i<chunks_num; p += chunk_size)
-        *reinterpret_cast<size_type*>(p) = ++i;
+    size_type i = 0;
+    try
+    {
+        for(; i<chunks_num_; ++i)
+        {
+            new (chunks_ + i) T();
+            chunks_[i].next_free_ = i + 1;
+        }
+    }
+    catch(...)
+    {
+        for(size_type k=0; k<i; ++k)
+            (chunks_[k].obj_).~T();
+        throw;
+    }
 
     chunk_ref new_head;
     new_head.idx_ = 0;
     new_head.generation_ = 0;
     head_.store(new_head, boost::memory_order_relaxed);
-
-    // Following block will be thown out by optimizer
-    if (ConstructObjects) 
-    {
-        unsigned char* p = chunks_.get();
-        size_type i = 0;
-        try 
-        {
-            for (; i<chunks_num; ++i, p += chunk_size)
-                new (p) T();
-        }
-        catch(...)
-        {
-            // in case of exceptions call destructors for all already created objects
-            p = chunks_.get();
-            for (size_type k = 0; k < i; p += chunk_size)
-                reinterpret_cast<pointer_type>(p)->T::~T();
-        }
-    }
 }
 
-template<typename T, bool ConstructObjects>
-fixed_object_pool<T, ConstructObjects>::~fixed_object_pool()
+template<typename T, typename Allocator>
+fixed_object_pool<T, Allocator>::~fixed_object_pool()
 {
-    if (ConstructObjects) 
-    {
-        unsigned char* p = chunks_.get();
-        size_type i = 0;
+    for(size_type i = 0; i < chunks_num_; ++i)
+        chunks_[i].obj_.~T();
 
-        for (; i < chunks_num_; p += chunk_size)
-            reinterpret_cast<pointer_type>(p)->T::~T();
-    }
+    chunk_allocator_type chunk_allocator(*this);
+    chunk_allocator.deallocate(chunks_, chunks_num_);
 }
 
-template<typename T, bool ConstructObjects>
-auto fixed_object_pool<T, ConstructObjects>::allocate() -> pointer_type
+template<typename T, typename Allocator>
+auto fixed_object_pool<T, Allocator>::allocate() -> pointer
 {
     chunk_ref old_head = head_.load(boost::memory_order_relaxed);
     chunk_ref new_head;
 
-    pointer_type res;
+    pointer res;
 
     do {
         if (old_head.idx_ == chunks_num_)
-            return 0;
+            throw no_more_objects();
 
-        res = reinterpret_cast<pointer_type>(chunks_.get() + chunk_size * old_head.idx_);
-        new_head.idx_ = *reinterpret_cast<size_type*>(res);
+        chunk& free_chunk = chunks_[old_head.idx_];
+
+        res = reinterpret_cast<pointer>(&free_chunk);
+        new_head.idx_ = free_chunk.next_free_;
         new_head.generation_ = old_head.generation_ + 1;
     }
     while(!head_.compare_exchange_weak(old_head, new_head));
@@ -134,20 +139,20 @@ auto fixed_object_pool<T, ConstructObjects>::allocate() -> pointer_type
     return res;
 }
 
-template<typename T, bool ConstructObjects>
-void fixed_object_pool<T, ConstructObjects>::deallocate(pointer_type p)
+template<typename T, typename Allocator>
+void fixed_object_pool<T, Allocator>::deallocate(pointer p)
 {
     assert("Ensure that p doesn`t violate lower bound" && (void*)p >= chunks_.get());
 
     chunk_ref old_head = head_.load(boost::memory_order_relaxed);
     chunk_ref new_head;
 
-    size_type& new_idx = *reinterpret_cast<size_type*>(p);
+    chunk& chunk_to_free = *reinterpret_cast<chunk*>(p);
 
     do {
-        new_idx = old_head.idx_;
+        chunk_to_free.next_free_ = old_head.idx_;
 
-        new_head.idx_ = (reinterpret_cast<unsigned char*>(p) - chunks_.get()) / chunk_size;
+        new_head.idx_ = &chunk_to_free - chunks_;
         new_head.generation_ = old_head.generation_ + 1;
     }
     while(!head_.compare_exchange_weak(old_head, new_head));
