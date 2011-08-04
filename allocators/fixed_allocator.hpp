@@ -29,10 +29,21 @@ class fixed_allocator : FallbackAllocator
 {
     typedef FallbackAllocator super;
 
-    typedef fixed_pool<FallbackAllocator>
+    // Rebind fallback allocator to some known type, for example for char
+    typedef typename FallbackAllocator::template rebind<char>::other
+        char_allocator;
+
+    // Pass it to fixed_pool template parameter. Now we are ensured we have 
+    // absolutely same fixed_pool type among our rebinding. Copy constructor
+    // from rebinded allocator can just copy construct fixed_pool_ptr.
+    typedef fixed_pool<char_allocator>
         fixed_pool_type;
+
+    // Smart pointer to fixed_pool
     typedef boost::intrusive_ptr<fixed_pool_type>
         fixed_pool_ptr;
+
+    // Allocator to allocate fixed_pool itself
     typedef typename FallbackAllocator::template rebind<fixed_pool_type>::other
         fixed_pool_allocator;
 
@@ -91,9 +102,8 @@ fixed_allocator<T, ChunksNum, FallbackAllocator>::fixed_allocator()
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
 template<typename T1, typename FallbackAllocator1>
 fixed_allocator<T, ChunksNum, FallbackAllocator>::fixed_allocator(const fixed_allocator<T1, ChunksNum, FallbackAllocator1>& other)
+    : pool_(other.pool_)
 {
-    if (other.pool_)
-        pool_.reset(reinterpret_cast<fixed_pool_type*>(other.pool_.get(), true));
 }
 
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
