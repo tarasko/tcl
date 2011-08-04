@@ -5,6 +5,9 @@
 #include <functional>
 #include <vector>
 
+/// \todo When thread local become available use it instead
+/// of boost::thread_specific_ptr.
+
 namespace tcl { namespace lock_free {
 
 struct hazard_pointers_reclaim_node

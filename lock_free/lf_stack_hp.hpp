@@ -26,21 +26,14 @@ class lf_stack_hp : Allocator::template rebind<lf_stack_hp_node<T> >::other
     typedef lf_stack_hp_node<T> node;
     typedef typename Allocator::template rebind<node>::other allocator_type;
 
-    typedef hazard_pointers<node, 10, allocator_type> hazard_pointers_type;
+    typedef hazard_pointers<node, 10> hazard_pointers_type;
 
     lf_stack_hp(const lf_stack_hp&);
     lf_stack_hp& operator=(const lf_stack_hp&);
 
-    static allocator_type& tune_allocator(allocator_type& allocator)
-    {
-        allocator.deallocate(allocator.allocate(1), 1);
-        return allocator;
-    }
-
 public:
     lf_stack_hp(const Allocator& allocator = Allocator()) 
         : allocator_type(allocator)
-        , hps_(tune_allocator(*(allocator_type*)this))
         , head_(0) 
     {
     }
@@ -80,7 +73,7 @@ public:
                 allocator_type::deallocate(old_head, 1);
             }
             else
-                hps_.reclaim_later(old_head);
+                hps_.reclaim_later(old_head, (allocator_type&)*this);
 
             return true;
         }
