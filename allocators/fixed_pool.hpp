@@ -1,5 +1,7 @@
 #pragma once
 
+#include "construct_destroy.hpp"
+
 #include <boost/atomic.hpp>
 #include <boost/cstdint.hpp>
 
@@ -19,13 +21,11 @@ namespace tcl { namespace allocators {
 ///
 /// \todo - Assert in destructor that all chunks are currently free.
 /// \todo - More assert in deallocate
-template<typename Allocator = std::allocator<char>>
-class fixed_pool : Allocator
+template<typename Allocator = std::allocator<char> >
+class fixed_pool : Allocator::template rebind<char>::other
 {
-    typedef Allocator allocator_type;
     typedef fixed_pool<Allocator> self_type;
-
-    typedef typename Allocator::template rebind<char>::other char_allocator_type;
+    typedef typename Allocator::template rebind<char>::other allocator_type;
     typedef typename Allocator::template rebind<self_type>::other self_allocator_type;
 
 public:
@@ -69,8 +69,7 @@ private:
         if (p->ref_count_.fetch_sub(1) == 1)
         {
             typename fixed_pool::self_allocator_type allocator(p->get_allocator());
-            p->~fixed_pool();
-            allocator.deallocate(p, 1);
+            ::tcl::allocators::destroy(allocator, p);
         }
     }
 
@@ -103,8 +102,7 @@ fixed_pool<Allocator>::fixed_pool(size_type chunks_num, size_t chunk_size, const
     , total_size_(chunk_size_ * chunks_num_)
 {
     // Allocate char array using provided self rebounded allocator
-    char_allocator_type char_allocator(*this);
-    chunks_ = char_allocator.allocate(total_size_);
+    chunks_ = construct_array(*(allocator_type*)this, total_size_);
 
     // Build steal index to next free block, for all blocks
     char* p = chunks_;
@@ -123,8 +121,7 @@ fixed_pool<Allocator>::fixed_pool(size_type chunks_num, size_t chunk_size, const
 template<typename Allocator>
 fixed_pool<Allocator>::~fixed_pool()
 {
-    char_allocator_type char_allocator(*this);
-    char_allocator.deallocate(chunks_, total_size_);
+    destroy_array(*(allocator_type*)this, chunks_, total_size_);
 }
 
 template<typename Allocator>

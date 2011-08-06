@@ -70,26 +70,33 @@ void measured_push_proc(Container& c, boost::barrier& b, const char* name)
 }
 
 template<typename Container>
-void do_spsc_test(const char* name)
+void do_test(const char* name, int push_threads, int pop_threads)
 { 
     Container c;
-    boost::barrier b(2);
+    boost::barrier b(push_threads + pop_threads);
 
-	boost::thread thr1_m(&measured_push_proc<Container>, std::ref(c), std::ref(b), name);
-	boost::thread thr2_m(&measured_pop_proc<Container>, std::ref(c), std::ref(b), name);
+    std::vector<boost::thread> thrs;
+    for(int i = 0; i<push_threads; ++i)
+        thrs.push_back(boost::thread(&measured_push_proc<Container>, std::ref(c), std::ref(b), name));
 
-	thr1_m.join();
-	thr2_m.join();
+    for(int i = 0; i<pop_threads; ++i)
+        thrs.push_back(boost::thread(&measured_pop_proc<Container>, std::ref(c), std::ref(b), name));
+
+    for(int i = 0; i<push_threads + pop_threads; ++i)
+        thrs[i].join();
 }
 
 int main(int argc, char* argv[])
 {
-    do_spsc_test<lb_stack<int>>("lb_stack");
-    do_spsc_test<lf_stack_hp<int, tcl::allocators::fixed_allocator<int, 10000>>>("lf_stack_hp");
-    //do_spsc_test<lf_stack_refcnt<int>>("lf_stack_refcnt");
     //do_spsc_test<lf_spsc_queue<int>>("lf_spsc_queue spsc");
-    //do_spsc_test<lb_queue<int>>("lb_queue spsc");
-    //do_spsc_test<lb_fg_queue<int>>("lb_fg_queue spsc");
+
+    do_test<lb_queue<int>>("lb_queue spsc", 2, 2);
+    do_test<lb_fg_queue<int, tcl::allocators::fixed_allocator<int, 10000>>>("lb_fg_queue spsc", 2, 2);
+
     //do_spsc_test<lf_mpmc_queue<int>>("lb_fg_queue spsc");
+
+    do_test<lb_stack<int>>("lb_stack", 2, 2);
+    do_test<lf_stack_hp<int, tcl::allocators::fixed_allocator<int, 10000>>>("lf_stack_hp", 2, 2);
+    do_test<lf_stack_refcnt<int, tcl::allocators::fixed_allocator<int, 10000>>>("lf_stack_refcnt", 2, 2);
 	return 0;
 }

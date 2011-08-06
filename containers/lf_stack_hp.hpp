@@ -2,6 +2,8 @@
 
 #include "hazard_pointers.hpp"
 
+#include <tcl/allocators/construct_destroy.hpp>
+
 #include <boost/atomic.hpp>
 
 #include <memory>
@@ -24,7 +26,7 @@ template<typename T, class Allocator = std::allocator<T>>
 class lf_stack_hp : Allocator::template rebind<lf_stack_hp_node<T> >::other
 {
     typedef lf_stack_hp_node<T> node;
-    typedef typename Allocator::template rebind<node>::other allocator_type;
+    typedef typename Allocator::template rebind<node>::other node_allocator;
 
     typedef hazard_pointers<node, 10> hazard_pointers_type;
 
@@ -33,22 +35,14 @@ class lf_stack_hp : Allocator::template rebind<lf_stack_hp_node<T> >::other
 
 public:
     lf_stack_hp(const Allocator& allocator = Allocator()) 
-        : allocator_type(allocator)
+        : node_allocator(allocator)
         , head_(0) 
     {
     }
 
     void push(const T& value)
     {
-        node* new_node = allocator_type::allocate(1);
-        try { 
-            new (new_node) node(value);
-        }
-        catch(...) 
-        {
-            allocator_type::deallocate(new_node, 1);
-            throw;
-        }
+        node* new_node = allocators::construct(*(node_allocator*)this, value);
         new_node->next_ = head_.load(boost::memory_order_relaxed);
         while(!head_.compare_exchange_weak(new_node->next_, new_node, boost::memory_order_release));
     }
@@ -68,12 +62,9 @@ public:
             result = std::move(old_head->value_);
 
             if (hps_.outstanding_hp_for(old_head))
-            {
-                old_head->~node();
-                allocator_type::deallocate(old_head, 1);
-            }
+                allocators::destroy(*(node_allocator*)this, old_head);
             else
-                hps_.reclaim_later(old_head, (allocator_type&)*this);
+                hps_.reclaim_later(old_head, (node_allocator&)*this);
 
             return true;
         }

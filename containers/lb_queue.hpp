@@ -11,24 +11,23 @@ class lb_queue
 public:
 	void push(const T& val)
 	{
-		std::shared_ptr<T> val_ptr = std::make_shared<T>(val);
 		boost::lock_guard<boost::mutex> g(guard_);
-		queue_.push(val_ptr);
+		queue_.push(val);
 	}
 
-	std::shared_ptr<T> try_pop()
+	bool try_pop(T& result)
 	{
 		boost::lock_guard<boost::mutex> g(guard_);
 		if (queue_.empty())
-			return std::shared_ptr<T>();
+			return false;
 
-		auto ret = std::move(queue_.front());
+		result = std::move(queue_.front());
 		queue_.pop();
-		return ret;
+		return true;
 	}
 
 private:
-	std::queue<std::shared_ptr<T>> queue_;
+	std::queue<T> queue_;
 	boost::mutex guard_;
 };
 

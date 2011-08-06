@@ -1,11 +1,15 @@
 #pragma once
 
+#include <tcl/allocators/construct_destroy.hpp>
+
+#include <memory>
+
 namespace tcl { namespace containers {
 
 template<typename T>
 struct lb_fg_queue_node
 {
-    lb_fg_queue_node() : next_(0)
+    lb_fg_queue_node(const T& data) : data_(data), next_(0)
     {
     }
 
@@ -13,15 +17,16 @@ struct lb_fg_queue_node
     lb_fg_queue_node* next_;
 };
 
-template<typename T, typename Allocator = std::allocator<T>>
-class lb_fg_queue : Allocator::rebind<lb_fg_queue_node>::other
+template<typename T, typename Allocator = std::allocator<T> >
+class lb_fg_queue : Allocator::rebind<lb_fg_queue_node<T> >::other
 {
-    typedef typename Allocator::rebind<lb_fg_queue_node>::other node_allocator;
-    typedef lb_fg_queue_node node;
+    typedef typename Allocator::rebind<lb_fg_queue_node<T> >::other node_allocator;
+    typedef lb_fg_queue_node<T> node;
 
 public:
-    lb_fg_queue()
-    : head_(node_allocator.allocate(1))
+    lb_fg_queue(const Allocator& allocator = Allocator())
+    : node_allocator(allocator)
+    , head_(allocate(1))
     , tail_(head_)
     {
         // We have just inserted dummy empty node
@@ -29,34 +34,30 @@ public:
 
     void push(const T& data)
     {
-        std::auto_ptr<node> new_tail(new node);
-        std::shared_ptr<T> new_data = std::make_shared<T>(data);
+        node* new_tail = allocators::construct(*(node_allocator*)this, data);
 
         boost::mutex::scoped_lock l(tail_guard_);
-
-        tail_->data_ = std::move(new_data);
-        tail_->next_ = new_tail.get();
-        tail_ = new_tail.release();
+        tail_->next_ = new_tail;
+        tail_ = new_tail;
     }
 
-    std::shared_ptr<T> try_pop()
+    bool try_pop(T& result)
     {
-        std::shared_ptr<T> res;
         node* old_head;
 
         {
             boost::mutex::scoped_lock l(head_guard_);
             if (get_tail() == head_)
-                return res;
+                return false;
 
             old_head = head_;
             head_ = head_->next_;
         }
 
-        res = std::move(old_head->data_);
-        delete old_head;
+        result = std::move(old_head->data_);
+        allocators::destroy(*(node_allocator*)this, old_head); 
 
-        return res;
+        return true;
     }
 
 private:

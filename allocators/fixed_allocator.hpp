@@ -1,6 +1,7 @@
 #pragma once
 
 #include "fixed_pool.hpp"
+#include "construct_destroy.hpp"
 
 #include <boost/intrusive_ptr.hpp>
 #include <boost/thread/once.hpp>
@@ -93,14 +94,11 @@ private:
     friend class fixed_allocator;
 #endif
     fixed_pool_ptr   pool_;
-    boost::once_flag pool_once_init_;
 };
 
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
 fixed_allocator<T, ChunksNum, FallbackAllocator>::fixed_allocator()
 {
-    boost::once_flag tmp = BOOST_ONCE_INIT;
-    pool_once_init_ = tmp;
 }
 
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
@@ -128,24 +126,9 @@ fixed_allocator<T, ChunksNum, FallbackAllocator>::allocate(size_type n, void* hi
 {
     if (!pool_)
     {
-        boost::call_once(
-            pool_once_init_
-          , [&]() 
-            { 
-                fixed_pool_allocator allocator(static_cast<super&>(*this));
-                fixed_pool_type* p = allocator.allocate(1);
-                try {
-                    p = new (p) fixed_pool_type(ChunksNum, sizeof(T));
-                }
-                catch(...)
-                {
-                    allocator.deallocate(p, 1);
-                    throw;
-                }
-
-                pool_.reset(p);
-            }
-          );
+        // TODO: Here is race, if two threads call us simultaniously
+        fixed_pool_allocator allocator(*(super*)this);
+        pool_.reset(::tcl::allocators::construct(allocator, ChunksNum, sizeof(T)));
     }
     else if (1 != n || pool_->chunk_size() != sizeof(T))
         return super::allocate(n, hint);
@@ -161,10 +144,9 @@ template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
 void
 fixed_allocator<T, ChunksNum, FallbackAllocator>::deallocate(pointer p, size_type n)
 {
-    assert(1 == n);
-    assert(pool_);
+    assert("Ensure that allocate was already called" && pool_);
 
-    if (pool_->is_my_ptr(p))
+    if (1 == n && pool_->is_my_ptr(p))
         pool_->deallocate(p);
     else
         super::deallocate(p, n);
