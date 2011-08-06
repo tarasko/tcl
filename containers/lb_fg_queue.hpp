@@ -1,13 +1,27 @@
 #pragma once
 
-namespace tcl { namespace lock_free {
+namespace tcl { namespace containers {
 
 template<typename T>
-class lb_fg_queue
+struct lb_fg_queue_node
 {
+    lb_fg_queue_node() : next_(0)
+    {
+    }
+
+    T data_;
+    lb_fg_queue_node* next_;
+};
+
+template<typename T, typename Allocator = std::allocator<T>>
+class lb_fg_queue : Allocator::rebind<lb_fg_queue_node>::other
+{
+    typedef typename Allocator::rebind<lb_fg_queue_node>::other node_allocator;
+    typedef lb_fg_queue_node node;
+
 public:
     lb_fg_queue()
-    : head_(new node)
+    : head_(node_allocator.allocate(1))
     , tail_(head_)
     {
         // We have just inserted dummy empty node
@@ -46,16 +60,6 @@ public:
     }
 
 private:
-    struct node
-    {
-        node() : next_(0)
-        {
-        }
-
-        std::shared_ptr<T> data_;
-        node* next_;
-    };
-
     node* get_tail()
     {
         boost::mutex::scoped_lock l(tail_guard_);

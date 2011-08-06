@@ -3,8 +3,10 @@
 #include <boost/thread/mutex.hpp>
 #include <stack>
 
-namespace tcl { namespace lock_free {
+namespace tcl { namespace containers {
 
+/// \brief Simple thread-safe stack based on std::stack protected by mutex
+/// Use it to compare with lock-free stacks
 template<typename T>
 class lb_stack
 {

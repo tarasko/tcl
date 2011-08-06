@@ -22,7 +22,7 @@ const int NUM_ATTEMPTS = 10000;
 boost::mutex g_log_guard;
 
 using namespace std;
-using namespace tcl::lock_free;
+using namespace tcl::containers;
 
 //void pop_proc()
 //{

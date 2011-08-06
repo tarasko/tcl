@@ -9,7 +9,7 @@
 
 #include <windows.h>
 
-namespace tcl { namespace lock_free {
+namespace tcl { namespace containers {
 
 /// \brief Container of hazard pointers.
 ///

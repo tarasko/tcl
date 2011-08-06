@@ -3,6 +3,7 @@
 #include "fixed_pool.hpp"
 
 #include <boost/intrusive_ptr.hpp>
+#include <boost/thread/once.hpp>
 
 #include <limits>
 
@@ -91,12 +92,15 @@ private:
 #ifdef _MSC_VER
     friend class fixed_allocator;
 #endif
-    fixed_pool_ptr pool_;
+    fixed_pool_ptr   pool_;
+    boost::once_flag pool_once_init_;
 };
 
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
 fixed_allocator<T, ChunksNum, FallbackAllocator>::fixed_allocator()
 {
+    boost::once_flag tmp = BOOST_ONCE_INIT;
+    pool_once_init_ = tmp;
 }
 
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
@@ -124,18 +128,24 @@ fixed_allocator<T, ChunksNum, FallbackAllocator>::allocate(size_type n, void* hi
 {
     if (!pool_)
     {
-        fixed_pool_allocator allocator(static_cast<super&>(*this));
-        fixed_pool_type* p = allocator.allocate(1);
-        try {
-            p = new (p) fixed_pool_type(ChunksNum, sizeof(T));
-        }
-        catch(...)
-        {
-            allocator.deallocate(p, 1);
-            throw;
-        }
+        boost::call_once(
+            pool_once_init_
+          , [&]() 
+            { 
+                fixed_pool_allocator allocator(static_cast<super&>(*this));
+                fixed_pool_type* p = allocator.allocate(1);
+                try {
+                    p = new (p) fixed_pool_type(ChunksNum, sizeof(T));
+                }
+                catch(...)
+                {
+                    allocator.deallocate(p, 1);
+                    throw;
+                }
 
-        pool_.reset(p);
+                pool_.reset(p);
+            }
+          );
     }
     else if (1 != n || pool_->chunk_size() != sizeof(T))
         return super::allocate(n, hint);

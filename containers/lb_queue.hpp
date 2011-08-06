@@ -3,7 +3,7 @@
 #include <boost/thread/mutex.hpp>
 #include <queue>
 
-namespace tcl { namespace lock_free {
+namespace tcl { namespace containers {
 
 template<typename T>
 class lb_queue

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace tcl { namespace lock_free {
+namespace tcl { namespace containers {
 
 template<typename T>
 class lf_spsc_queue

@@ -6,7 +6,7 @@
 
 #include <memory>
 
-namespace tcl { namespace lock_free {
+namespace tcl { namespace containers {
 
 // Node type for stack
 template<typename T>

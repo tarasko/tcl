@@ -8,8 +8,9 @@
 /// \todo When thread local become available use it instead
 /// of boost::thread_specific_ptr.
 
-namespace tcl { namespace lock_free {
+namespace tcl { namespace containers {
 
+/// \brief Pointer to object tied together with polimorphic deleter 
 struct hazard_pointers_reclaim_node
 {
 	template<typename T>
@@ -20,7 +21,7 @@ struct hazard_pointers_reclaim_node
 	}
 
 	template<typename T, typename Deleter>
-	hazard_pointers_reclaim_node(T* ptr, Deleter deleter)
+	hazard_pointers_reclaim_node(T* ptr, const Deleter& deleter)
 	: ptr_(ptr)
 	, deleter_(deleter)
 	{
@@ -87,8 +88,8 @@ hazard_pointers_reclaim_list& get_reclaim_list();
 namespace std {
 
 template<> inline void swap(
-    tcl::lock_free::hazard_pointers_reclaim_node& n1
-  , tcl::lock_free::hazard_pointers_reclaim_node& n2
+    tcl::containers::hazard_pointers_reclaim_node& n1
+  , tcl::containers::hazard_pointers_reclaim_node& n2
   )
 {
 	n1.swap(n2);

@@ -2,7 +2,7 @@
 
 #include <memory>
 
-namespace tcl { namespace lock_free {
+namespace tcl { namespace containers {
 
 static_assert (sizeof(void*) == 4, "lf_stack_refcnt should be lockfree");
 
