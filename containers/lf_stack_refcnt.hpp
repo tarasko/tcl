@@ -8,6 +8,8 @@
 
 namespace tcl { namespace containers {
 
+namespace detail {
+
 template<typename T>
 struct lf_stack_refcnt_node;
 
@@ -31,11 +33,13 @@ struct lf_stack_refcnt_node
 	lf_stack_refcnt_counted_node_ptr<T> next_;
 };
 
+}
+
 template<typename T, typename Allocator = std::allocator<T> >
-class lf_stack_refcnt : Allocator::template rebind<lf_stack_refcnt_node<T> >::other
+class lf_stack_refcnt : Allocator::template rebind<detail::lf_stack_refcnt_node<T> >::other
 {
-    typedef lf_stack_refcnt_node<T> node;
-    typedef lf_stack_refcnt_counted_node_ptr<T> counted_node_ptr;
+    typedef detail::lf_stack_refcnt_node<T> node;
+    typedef detail::lf_stack_refcnt_counted_node_ptr<T> counted_node_ptr;
     typedef typename Allocator::template rebind<node>::other node_allocator;
 
 	void increase_head_count(counted_node_ptr& old_counter)

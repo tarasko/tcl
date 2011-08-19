@@ -6,6 +6,8 @@
 
 namespace tcl { namespace containers {
 
+namespace detail {
+
 template<typename T>
 struct lb_fg_queue_node
 {
@@ -17,11 +19,13 @@ struct lb_fg_queue_node
     lb_fg_queue_node* next_;
 };
 
+}
+
 template<typename T, typename Allocator = std::allocator<T> >
-class lb_fg_queue : Allocator::rebind<lb_fg_queue_node<T> >::other
+class lb_fg_queue : Allocator::rebind<detail::lb_fg_queue_node<T> >::other
 {
-    typedef typename Allocator::rebind<lb_fg_queue_node<T> >::other node_allocator;
-    typedef lb_fg_queue_node<T> node;
+    typedef typename Allocator::rebind<detail::lb_fg_queue_node<T> >::other node_allocator;
+    typedef detail::lb_fg_queue_node<T> node;
 
 public:
     lb_fg_queue(const Allocator& allocator = Allocator())

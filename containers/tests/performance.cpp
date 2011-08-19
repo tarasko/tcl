@@ -93,10 +93,11 @@ int main(int argc, char* argv[])
     do_test<lb_queue<int>>("lb_queue spsc", 2, 2);
     do_test<lb_fg_queue<int, tcl::allocators::fixed_allocator<int, 10000>>>("lb_fg_queue spsc", 2, 2);
 
-    //do_spsc_test<lf_mpmc_queue<int>>("lb_fg_queue spsc");
+    do_test<lf_mpmc_queue<int, tcl::allocators::fixed_allocator<int, 10000>>>("lb_fg_queue spsc", 2, 2);
 
     do_test<lb_stack<int>>("lb_stack", 2, 2);
     do_test<lf_stack_hp<int, tcl::allocators::fixed_allocator<int, 10000>>>("lf_stack_hp", 2, 2);
     do_test<lf_stack_refcnt<int, tcl::allocators::fixed_allocator<int, 10000>>>("lf_stack_refcnt", 2, 2);
+
 	return 0;
 }

@@ -10,6 +10,8 @@
 
 namespace tcl { namespace containers {
 
+namespace detail {
+
 // Node type for stack
 template<typename T>
 struct lf_stack_hp_node
@@ -21,11 +23,13 @@ struct lf_stack_hp_node
     lf_stack_hp_node* next_;
 };
 
+}
+
 /// \brief Lock-free stack, that use hazard pointers to reclaim free node.
 template<typename T, class Allocator = std::allocator<T>>
-class lf_stack_hp : Allocator::template rebind<lf_stack_hp_node<T> >::other
+class lf_stack_hp : Allocator::template rebind<detail::lf_stack_hp_node<T> >::other
 {
-    typedef lf_stack_hp_node<T> node;
+    typedef detail::lf_stack_hp_node<T> node;
     typedef typename Allocator::template rebind<node>::other node_allocator;
 
     typedef hazard_pointers<node, 10> hazard_pointers_type;
