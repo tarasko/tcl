@@ -9,7 +9,7 @@ namespace tcl { namespace rll {
 class CNeuronalNetwork : public CValueFunction 
 {
 public:
-    CNeuronalNetwork(CConfigPtr i_ptrConfig);
+    CNeuronalNetwork(const CConfigPtr& i_ptrConfig);
 
     /// @brief Return value for internal representation of state.
     virtual double GetValue(const CVectorRlltPtr& i_ptrState);

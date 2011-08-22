@@ -1,9 +1,8 @@
 #pragma once
 
 #include <vector>
-#include <functional>
-#include <memory>
 #include <exception>
+#include <memory>
 
 #if defined(TCL_RLL_DOUBLE)
 typedef double rll_type;
@@ -33,6 +32,8 @@ DEFINE_EXCEPTION(CRLException)
 struct CConfig;
 class CState;
 class CAction;
+class CEnvState;
+class CEnvAction;
 class CAgent;
 class CStateMethod;
 class CActionMethod;
@@ -47,15 +48,5 @@ typedef std::shared_ptr<CStateMethod> CStateMethodPtr;
 typedef std::shared_ptr<CActionMethod> CActionMethodPtr;
 typedef std::shared_ptr<CPolicy> CPolicyPtr;
 typedef std::shared_ptr<CValueFunction> CValueFunctionPtr;
-
-/// @brief Translate from external state to internal.
-///
-/// If we use state value function pass null action pointer.
-/// Active agent index append to vector as last element
-CVectorRlltPtr translate(
-    const CStatePtr& i_ptrState
-  , const CActionPtr& i_ptrAction
-  , int i_agent
-  );
 
 }}

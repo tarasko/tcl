@@ -1,4 +1,7 @@
 #include "lambda_method.hpp"
+#include "agent.hpp"
+#include "environment.hpp"
+
 #include "detail/logger.hpp"
 
 #include <cassert>

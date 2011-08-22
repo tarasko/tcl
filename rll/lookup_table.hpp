@@ -1,10 +1,11 @@
 #pragma once
 
-#include "types.hpp"
+#if !defined(TCL_RLL_INT)
+#error "Lookup table is only available in integer version of RLL"
+#endif
+
+#include "rll_fwd.hpp"
 #include "value_function.hpp"
-#include "state.hpp"
-#include "action.hpp"
-#include "config.hpp"
 
 #include <map>
 
@@ -25,7 +26,7 @@ public:
     virtual void Update(const CUpdateList& i_list);
 
 private:
-    struct PVectorDblPtrLess
+    struct PVectorRttlPtrLess
     {
         bool operator()(const CVectorRlltPtr& f, const CVectorRlltPtr& s) const
         {
@@ -33,12 +34,10 @@ private:
         }
     };
 
-    typedef std::map<CVectorRlltPtr, double, PVectorDblPtrLess> CValueMap;
-
-    /// @brief Map from data vector to value.
-    CValueMap m_values;
-    /// @brief Initial value for new states.
-    double m_init;
+    typedef std::map<CVectorRlltPtr, double, PVectorRttlPtrLess> CValueMap;
+    
+    CValueMap m_values;  //!< Map from data vector to value.
+    double m_init;       //!< Initial value for new states.
 };
 
 }}

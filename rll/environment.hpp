@@ -1,7 +1,6 @@
-#ifndef __RLDREAM_ENVIRONMENT_H__
-#define __RLDREAM_ENVIRONMENT_H__
+#pragma once
 
-#include "agent.hpp"
+#include "rll_fwd.hpp"
 
 namespace tcl { namespace rll {
 
@@ -94,5 +93,3 @@ protected:
 };
 
 }}
-
-#endif //__RLDREAM_ENVIRONMENT_H__

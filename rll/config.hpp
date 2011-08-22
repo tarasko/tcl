@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.hpp"
+#include "rll_fwd.hpp"
 
 #include <memory>
 

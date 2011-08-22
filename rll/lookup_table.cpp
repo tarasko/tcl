@@ -1,6 +1,6 @@
 #include "lookup_table.hpp"
 
-using std::make_pair;
+using namespace std;
 
 namespace tcl { namespace rll {
 
@@ -30,3 +30,4 @@ void CLookupTable::Update(const CUpdateList& i_list)
 }
 
 }}
+

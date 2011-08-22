@@ -1,7 +1,7 @@
 #ifndef __RLDREAM_LOGGER_H__
 #define __RLDREAM_LOGGER_H__
 
-#include "../types.hpp"
+#include "../rll_fwd.hpp"
 #include "../value_function.hpp"
 
 #include "fann/doublefann.h"

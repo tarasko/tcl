@@ -1,11 +1,8 @@
 #pragma once
 
-#include "types.hpp"
-#include "state.hpp"
-#include "action.hpp"
+#include "rll_fwd.hpp"
 
 #include <vector>
-#include <memory>
 #include <utility>
 
 namespace tcl { namespace rll {
@@ -29,18 +26,6 @@ public:
 
     /** @brief Correct value function according update map */
     virtual void Update(const CUpdateList& i_list) = 0;
-
-    /** @brief Return value for state-action pair.
-    If we use state value function pass null action pointer */
-    virtual double GetValue(
-        const CStatePtr& i_ptrState
-      , const CActionPtr& i_ptrAction
-      , int i_agent
-      ) 
-    {
-        CVectorRlltPtr ptrIntState = translate(i_ptrState, i_ptrAction, i_agent);
-        return GetValue(ptrIntState);
-    }
 };
 
 }}

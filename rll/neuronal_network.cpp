@@ -108,9 +108,10 @@ private:
     double m_scale;  //!< Defines the scale rate for output values
 };
 
-CNeuronalNetwork::CNeuronalNetwork(CConfigPtr i_ptrConfig) :
-m_pFann(NULL),
-    m_ptrConfig(i_ptrConfig) {
+CNeuronalNetwork::CNeuronalNetwork(const CConfigPtr& i_ptrConfig) 
+    : m_pFann(NULL)
+    , m_ptrConfig(i_ptrConfig) 
+{
 }
 
 double CNeuronalNetwork::GetValue(const CVectorRlltPtr& i_ptrState) {

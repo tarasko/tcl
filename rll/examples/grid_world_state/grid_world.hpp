@@ -1,7 +1,7 @@
 #ifndef __GRIDWORLD_H__
 #define __GRIDWORLD_H__
 
-#include <tcl/rll/environment.hpp>
+#include <tcl/rll/rll.hpp>
 
 class CGridWorld :
     public tcl::rll::CEnvState {

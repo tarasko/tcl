@@ -1,18 +1,14 @@
-#include <tcl/rll/environment.hpp>
-#include <tcl/rll/neuronal_network.hpp>
-#include <tcl/rll/lookup_table.hpp>
-#include <tcl/rll/lambda_method.hpp>
+#include <tcl/rll/rll.hpp>
+
+#include <boost/lexical_cast.hpp>
 
 #include <vector>
 #include <fstream>
 #include <iostream>
-#include <boost/any.hpp>
-#include <boost/lexical_cast.hpp>
 
 using namespace tcl::rll;
-using boost::any_cast;
-using boost::lexical_cast;
 using namespace std;
+using namespace boost;
 
 class CTicTacToeState : public CEnvState {
 public:
@@ -64,7 +60,7 @@ protected:
         string sy = lexical_cast<string, int>(y);
         string dest = sx + sy;
         // Fill squares
-        squares[x][y] = any_cast<int>(m_ptrState->GetValue(dest.c_str()));
+        squares[x][y] = m_ptrState->GetValue(dest.c_str());
         if (0 == squares[x][y]) {
           // Make new state
           CStatePtr ptrNewState = m_ptrState->Clone();
@@ -114,7 +110,7 @@ protected:
         string sy = lexical_cast<string, int>(y);
         string dest = sx + sy;
         // Fill squares
-        squares[x][y] = any_cast<int>(m_ptrState->GetValue(dest.c_str()));
+        squares[x][y] = m_ptrState->GetValue(dest.c_str());
         // Fill my
         my[x][y] = squares[x][y] == activePlayerSigns;
         // Update noEmptySquares
@@ -171,7 +167,7 @@ protected:
     cout << "Episode: " << m_episode
       << " Step: " <<  m_step 
       << " Value: " 
-      << m_agents[0]->m_ptrFunc->GetValue(m_ptrState, CActionPtr(), m_activeAgent)
+      << m_agents[0]->m_ptrFunc->GetValue(translate(m_ptrState, CActionPtr(), m_activeAgent))
       << endl;
     for (int x=0; x<3; ++x) {
       string sx = lexical_cast<string, int>(x);
@@ -179,7 +175,7 @@ protected:
         string sy = lexical_cast<string, int>(y);
         string dest = sx + sy;
         // Fill squares
-        int sign = any_cast<int>(m_ptrState->GetValue(dest.c_str()));
+        int sign = m_ptrState->GetValue(dest.c_str());
         if (1 == sign) {
           cout << "X";
         } else if (2 == sign) {

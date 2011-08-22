@@ -1,4 +1,9 @@
 #include "method.hpp"
+#include "environment.hpp"
+#include "agent.hpp"
+#include "state.hpp"
+#include "action.hpp"
+
 #include "detail/logger.hpp"
 
 #include <functional>
@@ -53,7 +58,7 @@ void CStateMethod::processEpisode(unsigned int i_episode)
           , [&](CEnvState::CPossibleStates::const_reference r) 
             {
                 double stateValue = activeAgent->m_ptrFunc->GetValue(
-                    r, CActionPtr(), m_pEnv->m_activeAgent
+                    translate(r, CActionPtr(), m_pEnv->m_activeAgent)
                   );
                 variants.insert(std::make_pair(stateValue, r));
             }
@@ -153,7 +158,7 @@ void CActionMethod::processEpisode(unsigned int i_episode)
           , [&](CEnvAction::CPossibleActions::const_reference r) 
             {
                 double actionValue = activeAgent->m_ptrFunc->GetValue(
-                    m_pEnv->m_ptrState, r, m_pEnv->m_activeAgent
+                    translate(m_pEnv->m_ptrState, r, m_pEnv->m_activeAgent)
                   );
                 variants.insert(std::make_pair(actionValue, r));
             }
@@ -192,6 +197,20 @@ void CActionMethod::processEpisode(unsigned int i_episode)
 
         ++m_pEnv->m_step;
     } while (!finished);
+}
+
+CVectorRlltPtr translate(
+    const CStatePtr& i_ptrState
+  , const CActionPtr& i_ptrAction
+  , int i_agent) 
+{
+    CVectorRlltPtr ptrRet = i_ptrState->GetData();
+
+    if (i_ptrAction) {
+        ptrRet->push_back(i_ptrAction->GetData());
+    }
+    ptrRet->push_back(i_agent);
+    return ptrRet;    
 }
 
 }}

@@ -126,7 +126,7 @@ void CGridWorld::PrintValueFunc() {
     for (int col = 0; col < 10; ++col) {
       temp->SetValue("COLUMN", col);
       fout.width(9);
-      fout << m_agents[0]->m_ptrFunc->GetValue(temp, CActionPtr(), 0) << " ";
+      fout << m_agents[0]->m_ptrFunc->GetValue(translate(temp, CActionPtr(), 0)) << " ";
     }
     fout << std::endl;
   }

@@ -1,12 +1,9 @@
 #pragma once
 
-#include "types.hpp"
-#include "config.hpp"
+#include "rll_fwd.hpp"
 #include "policy.hpp"
-#include "environment.hpp"
 
-#include <memory>
-#include <list>
+#include <map>
 
 namespace tcl { namespace rll {
 
@@ -98,5 +95,15 @@ protected:
     CActionPtr m_ptrGreedyAction;     //!< Greedy action
     double m_greedyValue;             //!< Greedy action value
 };
+
+/// @brief Translate from external state to internal.
+///
+/// If we use state value function pass null action pointer.
+/// Active agent index append to vector as last element
+CVectorRlltPtr translate(
+    const CStatePtr& i_ptrState
+  , const CActionPtr& i_ptrAction
+  , int i_agent
+  );
 
 }}

@@ -7,7 +7,7 @@ using std::make_pair;
 
 namespace tcl { namespace rll {
 
-CAgent::CAgent(CValueFunctionPtr i_ptrFunc) 
+CAgent::CAgent(const CValueFunctionPtr& i_ptrFunc) 
     : m_reward(0.0)
     , m_ptrFunc(i_ptrFunc) 
 {

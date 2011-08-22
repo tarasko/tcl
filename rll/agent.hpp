@@ -1,8 +1,6 @@
 #pragma once
 
-#include "types.hpp"
-#include "state.hpp"
-#include "value_function.hpp"
+#include "rll_fwd.hpp"
 
 #include <list>
 #include <memory>
@@ -16,7 +14,7 @@ namespace tcl { namespace rll {
 class CAgent 
 {
 public:
-    CAgent(CValueFunctionPtr i_ptrFunc);
+    CAgent(const CValueFunctionPtr& i_ptrFunc);
 
     typedef std::vector<CVectorRlltPtr> CPreviousStates;
     typedef std::list<std::pair<CVectorRlltPtr, double> > CTracesMap;
@@ -43,10 +41,10 @@ public:
     /// @brief Clean agent episode temporaries
     void Clean();
 
-    double m_reward;              //!< Accumulated reward after few steps of waiting to become active
+    double m_reward;               //!< Accumulated reward after few steps of waiting to become active
     CVectorRlltPtr m_ptrPrevState; //!< Last agent state when it was active
-    CTracesMap m_traces;          //!< Agent eligibility traces
-    CValueFunctionPtr m_ptrFunc;  //!< Value function for agent
+    CTracesMap m_traces;           //!< Agent eligibility traces
+    CValueFunctionPtr m_ptrFunc;   //!< Value function for agent
 };
 
 }}

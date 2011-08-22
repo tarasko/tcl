@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.hpp"
+#include "rll_fwd.hpp"
 
 #include <string>
 #include <map>
@@ -42,8 +42,7 @@ public:
 
 protected:
     typedef std::map<std::string, rll_type> CVarMap;
-    /** @brief Map of named variables */
-    CVarMap m_vars;
+    CVarMap m_vars;  //!< Map of named variables
 };
 
 }}
