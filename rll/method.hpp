@@ -54,7 +54,7 @@ protected:
     virtual void processEpisode(unsigned int i_episode);
 
     /// @brief Update value functions for previous states using last rewards.
-    virtual CVectorDblPtr updateValueFunction(
+    virtual CVectorRlltPtr updateValueFunction(
         int i_agentIndex
       , double i_reward
       , bool i_terminal
@@ -62,8 +62,6 @@ protected:
 
     CEnvState* m_pEnv;  //!< Environment
 };
-
-typedef std::shared_ptr<CStateMethod> CStateMethodPtr;
 
 /// @brief Base class for methods which operate on state-action pairs
 class CActionMethod : public CMethodBase 
@@ -84,7 +82,7 @@ protected:
     virtual void processEpisode(unsigned int i_episode);
 
     /// @brief Update value functions for previous act.-st. using last rewards.
-    virtual CVectorDblPtr updateValueFunction(
+    virtual CVectorRlltPtr updateValueFunction(
         int i_agentIndex
       , double i_reward
       , bool i_terminal
@@ -100,7 +98,5 @@ protected:
     CActionPtr m_ptrGreedyAction;     //!< Greedy action
     double m_greedyValue;             //!< Greedy action value
 };
-
-typedef std::shared_ptr<CActionMethod> CActionMethodPtr;
 
 }}

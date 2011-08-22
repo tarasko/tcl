@@ -7,10 +7,6 @@
 #include <iostream>
 
 using namespace tcl::rll;
-using boost::any_cast;
-using boost::static_pointer_cast;
-using boost::shared_ptr;
-
 using namespace std;
 
 CGridWorld::CGridWorld(void) {
@@ -37,10 +33,10 @@ CGridWorld::CGridWorld(void) {
   m_wind[9] = 0;
 
   // Init actions
-  m_actions.push_back(boost::shared_ptr<CGridWorldAction>(new CGridWorldAction(-1, 0, 0)));
-  m_actions.push_back(boost::shared_ptr<CGridWorldAction>(new CGridWorldAction(1, 0, 1)));
-  m_actions.push_back(boost::shared_ptr<CGridWorldAction>(new CGridWorldAction(0, -1, 2)));
-  m_actions.push_back(boost::shared_ptr<CGridWorldAction>(new CGridWorldAction(0, 1, 3)));
+  m_actions.push_back(std::make_shared<CGridWorldAction>(-1, 0, 0));
+  m_actions.push_back(std::make_shared<CGridWorldAction>(1, 0, 1));
+  m_actions.push_back(std::make_shared<CGridWorldAction>(0, -1, 2));
+  m_actions.push_back(std::make_shared<CGridWorldAction>(0, 1, 3));
 }
 
 void CGridWorld::initEpisode() {
@@ -84,8 +80,8 @@ void CGridWorld::observeRewards(CVectorDbl& o_rewards) {
 }
 
 bool CGridWorld::isTerminalState(CStatePtr i_ptrState) {
-  return any_cast<int>(i_ptrState->GetValue("ROW")) == 3 && 
-         any_cast<int>(i_ptrState->GetValue("COLUMN")) == 7;
+  return i_ptrState->GetValue("ROW") == 3 && 
+         i_ptrState->GetValue("COLUMN") == 7;
 }
 
 void CGridWorld::PrintValueFunc() {
@@ -103,14 +99,16 @@ void CGridWorld::PrintValueFunc() {
 */
 }
 
-int CGridWorld::applyRowBounds(int i_row) {
-  i_row = i_row > 6 ? 6 : i_row;
-  i_row = i_row < 0 ? 0 : i_row;
-  return i_row;
+int CGridWorld::applyRowBounds(int i_row) 
+{
+    i_row = i_row > 6 ? 6 : i_row;
+    i_row = i_row < 0 ? 0 : i_row;
+    return i_row;
 }
 
-int CGridWorld::applyColBounds(int i_col) {
-  i_col = i_col > 9 ? 9 : i_col;
-  i_col = i_col < 0 ? 0 : i_col;
-  return i_col;
+int CGridWorld::applyColBounds(int i_col) 
+{
+    i_col = i_col > 9 ? 9 : i_col;
+    i_col = i_col < 0 ? 0 : i_col;
+    return i_col;
 }

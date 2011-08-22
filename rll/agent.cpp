@@ -15,7 +15,7 @@ CAgent::CAgent(CValueFunctionPtr i_ptrFunc)
 }
 
 void CAgent::UpdateTrace(
-    const CVectorDblPtr& i_ptrState
+    const CVectorRlltPtr& i_ptrState
   , bool i_accum
   , double i_etEpsilon
   ) 

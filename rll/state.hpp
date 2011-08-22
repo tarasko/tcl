@@ -28,12 +28,12 @@ public:
     void RevokeVariable(const std::string& i_name);
 
     /** @brief Set value for named variable */
-    void SetValue(const std::string& i_name, double i_val);
+    void SetValue(const std::string& i_name, rll_type i_val);
     /** @brief Return value for named variable */
-    double GetValue(const std::string& i_name);
+    rll_type GetValue(const std::string& i_name);
 
     /** @brief Return state variables as array */
-    CVectorDblPtr GetData() const;
+    CVectorRlltPtr GetData() const;
 
     /** @brief Spawn new state the exact copy of exist one */
     CStatePtr Clone() const;
@@ -41,7 +41,7 @@ public:
     bool IsEqual(const CStatePtr& i_ptrState) const;
 
 protected:
-    typedef std::map<std::string, double> CVarMap;
+    typedef std::map<std::string, rll_type> CVarMap;
     /** @brief Map of named variables */
     CVarMap m_vars;
 };

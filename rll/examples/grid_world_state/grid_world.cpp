@@ -7,9 +7,7 @@
 #include <iostream>
 
 using namespace tcl::rll;
-using boost::any_cast;
-using std::multimap;
-using std::make_pair;
+using namespace std;
 
 CGridWorld::CGridWorld(void) {
   // Create config
@@ -66,8 +64,8 @@ void CGridWorld::fillPossibilities(CPossibleStates& o_states) {
   // Spawn four new states which occurs after corresponding actions and choose 
   // some according to policy
 
-  int curRow = any_cast<int>(m_ptrState->GetValue("ROW"));
-  int curCol = any_cast<int>(m_ptrState->GetValue("COLUMN"));
+  int curRow = m_ptrState->GetValue("ROW");
+  int curCol = m_ptrState->GetValue("COLUMN");
 
   // Move left
   {
@@ -116,8 +114,8 @@ void CGridWorld::observeRewards(CVectorDbl& o_rewards) {
 }
 
 bool CGridWorld::isTerminalState(CStatePtr i_ptrState) {
-  return any_cast<int>(i_ptrState->GetValue("ROW")) == 3 && 
-         any_cast<int>(i_ptrState->GetValue("COLUMN")) == 7;
+  return i_ptrState->GetValue("ROW") == 3 && 
+         i_ptrState->GetValue("COLUMN") == 7;
 }
 
 void CGridWorld::PrintValueFunc() {

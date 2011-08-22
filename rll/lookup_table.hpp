@@ -13,22 +13,32 @@ namespace tcl { namespace rll {
 /// @brief Implement value function based on lookup table.
 /// Works only for state (and action) variables which has type int.
 /// @todo Use hash table
-class CLookupTable : public CValueFunction {
+class CLookupTable : public CValueFunction 
+{
 public:
-  CLookupTable(double i_init = 0.0) : m_init(i_init) {}
+    CLookupTable(double i_init = 0.0) : m_init(i_init) {}
 
-  /** @brief Return value for internal representation of state */
-  virtual double        GetValue(CVectorAnyPtr i_ptrState);
-  /** @brief Correct value function according update map */
-  virtual void          Update(const CUpdateList& i_list);
+    /// @brief Return value for internal representation of state.
+    virtual double GetValue(const CVectorRlltPtr& i_ptrState);
+    /// @brief Correct value function according update map.
+    /// @todo think about checkState for interger values
+    virtual void Update(const CUpdateList& i_list);
 
-protected:
-  typedef std::map<CVectorAnyPtr, double, PVectorAnyPtrLessStrict<int> > CValueMap;
+private:
+    struct PVectorDblPtrLess
+    {
+        bool operator()(const CVectorRlltPtr& f, const CVectorRlltPtr& s) const
+        {
+            return std::lexicographical_compare(f->begin(), f->end(), s->begin(), s->end());
+        }
+    };
 
-  /** @brief Map from data vector to value */
-  CValueMap             m_values;
-  /** @brief Initial value for new states */
-  double                m_init;
+    typedef std::map<CVectorRlltPtr, double, PVectorDblPtrLess> CValueMap;
+
+    /// @brief Map from data vector to value.
+    CValueMap m_values;
+    /// @brief Initial value for new states.
+    double m_init;
 };
 
 }}

@@ -5,7 +5,7 @@
 
 namespace tcl { namespace rll { 
 
-CVectorDblPtr CLambdaTD::getPreviousState(int i_agentIndex) 
+CVectorRlltPtr CLambdaTD::getPreviousState(int i_agentIndex) 
 {
     CAgentPtr ptrAgent = m_pEnv->m_agents[i_agentIndex];
     if (ptrAgent->m_ptrPrevState != NULL) {
@@ -18,14 +18,14 @@ CVectorDblPtr CLambdaTD::getPreviousState(int i_agentIndex)
     return ptrAgent->m_ptrPrevState;
 }
 
-CVectorDblPtr CLambdaTD::updateValueFunction(
+CVectorRlltPtr CLambdaTD::updateValueFunction(
     int i_agentIndex
   , double i_reward
   , bool i_terminal
   ) 
 {
-    CVectorDblPtr ptrState = translate(m_pEnv->m_ptrState, CActionPtr(), i_agentIndex);
-    CVectorDblPtr ptrPrevState = getPreviousState(i_agentIndex);
+    CVectorRlltPtr ptrState = translate(m_pEnv->m_ptrState, CActionPtr(), i_agentIndex);
+    CVectorRlltPtr ptrPrevState = getPreviousState(i_agentIndex);
 
     CAgentPtr ptrAgent = m_pEnv->m_agents[i_agentIndex];
 
@@ -71,13 +71,13 @@ CVectorDblPtr CLambdaTD::updateValueFunction(
 }
 
 /** @todo Avoid repeating of calculation value function */
-CVectorDblPtr CLambdaSarsa::updateValueFunction(
+CVectorRlltPtr CLambdaSarsa::updateValueFunction(
     int i_agentIndex
   , double i_reward
   , bool i_terminal
   ) 
 {
-    CVectorDblPtr ptrStateAction = translate(
+    CVectorRlltPtr ptrStateAction = translate(
         m_pEnv->m_ptrPrevState
       , m_ptrPerformedAction
       , i_agentIndex
@@ -121,11 +121,11 @@ CVectorDblPtr CLambdaSarsa::updateValueFunction(
     return ptrStateAction;
 }
 
-CVectorDblPtr CLambdaWatkins::updateValueFunction(int i_agentIndex,
+CVectorRlltPtr CLambdaWatkins::updateValueFunction(int i_agentIndex,
                                                   double i_reward, 
                                                   bool i_terminal) 
 {
-    CVectorDblPtr ptrStateAction = translate(
+    CVectorRlltPtr ptrStateAction = translate(
         m_pEnv->m_ptrPrevState
       , m_ptrPerformedAction
       , i_agentIndex

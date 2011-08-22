@@ -13,12 +13,13 @@ namespace tcl { namespace rll {
     Contain various helpful information about agent.
     Agent internal state differs from internal state stored in Method.
     Additionaly it contains agent index on the bottom */
-struct CAgent 
+class CAgent 
 {
+public:
     CAgent(CValueFunctionPtr i_ptrFunc);
 
-    typedef std::vector<CVectorDblPtr> CPreviousStates;
-    typedef std::list<std::pair<CVectorDblPtr, double> > CTracesMap;
+    typedef std::vector<CVectorRlltPtr> CPreviousStates;
+    typedef std::list<std::pair<CVectorRlltPtr, double> > CTracesMap;
 
     /// @brief Add or update state value to eligibility trace
     /// 
@@ -34,7 +35,7 @@ struct CAgent
     /// @param i_etEpsilon - if trace value is less than this, remove it from traces
     /// map.
     void UpdateTrace(
-        const CVectorDblPtr& i_ptrState
+        const CVectorRlltPtr& i_ptrState
       , bool i_accum
       , double  i_etEpsilon
       );
@@ -43,15 +44,9 @@ struct CAgent
     void Clean();
 
     double m_reward;              //!< Accumulated reward after few steps of waiting to become active
-    CVectorDblPtr m_ptrPrevState; //!< Last agent state when it was active
+    CVectorRlltPtr m_ptrPrevState; //!< Last agent state when it was active
     CTracesMap m_traces;          //!< Agent eligibility traces
     CValueFunctionPtr m_ptrFunc;  //!< Value function for agent
-
-private:
-    struct PTraceLess;
-    struct PStatesEq;
 };
-
-typedef std::shared_ptr<CAgent> CAgentPtr;
 
 }}

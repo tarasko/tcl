@@ -19,7 +19,7 @@ public:
 
 protected:
     /// @brief Update value functions for previous states using last rewards.
-    virtual CVectorDblPtr updateValueFunction(
+    virtual CVectorRlltPtr updateValueFunction(
         int i_agentIndex
       , double i_reward
       , bool i_terminal
@@ -33,7 +33,7 @@ protected:
     /// initial states.
     ///
     /// @param i_agent - agent index
-    CVectorDblPtr getPreviousState(int i_agentIndex);
+    CVectorRlltPtr getPreviousState(int i_agentIndex);
 };
 
 /// @brief Sarsa method for state value function.
@@ -47,7 +47,7 @@ public:
 
 protected:
     /// @brief Update value functions for previous act.-st. using last rewards.
-    virtual CVectorDblPtr updateValueFunction(
+    virtual CVectorRlltPtr updateValueFunction(
         int i_agentIndex
       , double i_reward
       , bool i_terminal
@@ -65,7 +65,7 @@ public:
 
 protected:
     /// @brief Update value functions for previous act.-st. using last rewards.
-    virtual CVectorDblPtr updateValueFunction(
+    virtual CVectorRlltPtr updateValueFunction(
         int i_agentIndex
       , double i_reward
       , bool i_terminal

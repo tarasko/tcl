@@ -81,6 +81,4 @@ protected:
     std::mt19937 m_gen;
 };
 
-typedef std::shared_ptr<CPolicy> CPolicyPtr;
-
 }}

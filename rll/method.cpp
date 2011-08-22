@@ -69,7 +69,7 @@ void CStateMethod::processEpisode(unsigned int i_episode)
         finished = m_pEnv->isEpisodeFinished();
 
         // GET REWARDS FOR EVERY AGENT FOR NEXT STATE
-        CVectorDbl rewards(m_pEnv->m_agents.size(), 0.0);
+        CVectorDbl rewards(m_pEnv->m_agents.size(), rll_type(0.0));
         m_pEnv->observeRewards(rewards);
         if (rewards.size() != m_pEnv->m_agents.size()) {
             throw CRLException("Rewards vector must be with size equal to number of agents");
@@ -85,7 +85,7 @@ void CStateMethod::processEpisode(unsigned int i_episode)
             for (std::vector<CAgentPtr>::size_type i=0; i < m_pEnv->m_agents.size(); ++i) {
                 double reward = m_pEnv->m_agents[i]->m_reward;
                 m_pEnv->m_agents[i]->m_reward = 0.0;
-                CVectorDblPtr ptrAgentState = updateValueFunction(
+                CVectorRlltPtr ptrAgentState = updateValueFunction(
                     static_cast<int>(i), 
                     reward, 
                     true);
@@ -169,7 +169,7 @@ void CActionMethod::processEpisode(unsigned int i_episode)
         // GET NEXT STATE AND REWARDS
         m_pEnv->m_ptrPrevState = m_pEnv->m_ptrState;
         m_pEnv->m_ptrState = m_pEnv->getNextState(m_pEnv->m_ptrState, m_ptrPerformedAction);
-        CVectorDbl rewards(m_pEnv->m_agents.size(), 0.0);
+        CVectorDbl rewards(m_pEnv->m_agents.size(), rll_type(0.0));
         m_pEnv->observeRewards(rewards);
 
         // UPDATE VALUE FUNCTION

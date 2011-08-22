@@ -77,6 +77,4 @@ struct CConfig
     bool m_rewardTerminal;
 };
 
-typedef std::shared_ptr<CConfig> CConfigPtr;
-
 }}

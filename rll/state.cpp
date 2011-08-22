@@ -23,7 +23,7 @@ void CState::RevokeVariable(const std::string& i_name)
     }
 }
 
-void CState::SetValue(const std::string& i_name, double i_val) 
+void CState::SetValue(const std::string& i_name, rll_type i_val) 
 {
     CVarMap::iterator i = m_vars.find(i_name);
     if (i == m_vars.end()) {
@@ -33,7 +33,7 @@ void CState::SetValue(const std::string& i_name, double i_val)
     }
 }
 
-double CState::GetValue(const std::string& i_name) 
+rll_type CState::GetValue(const std::string& i_name) 
 {
     CVarMap::iterator i = m_vars.find(i_name);
     if (i == m_vars.end()) {
@@ -43,9 +43,9 @@ double CState::GetValue(const std::string& i_name)
     }
 }
 
-CVectorDblPtr CState::GetData() const 
+CVectorRlltPtr CState::GetData() const 
 {
-    CVectorDblPtr result = std::make_shared<CVectorDbl>(m_vars.size());
+    CVectorRlltPtr result = std::make_shared<CVectorDbl>(m_vars.size());
 
     std::transform(
         m_vars.begin()

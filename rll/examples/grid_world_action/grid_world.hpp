@@ -14,14 +14,13 @@ public:
     CGridWorldAction() : m_x(0), m_y(0), m_id(0) {}
     CGridWorldAction(int i_x, int i_y, int i_id) : m_x(i_x), m_y(i_y), m_id(i_id) {}
 
-    virtual boost::any    GetData() const {
+    virtual int GetData() const {
       return m_id;
     }
 
     void ChangeState(tcl::rll::CStatePtr i_ptrState, std::map<int, int>& i_wind) {
-      using boost::any_cast;
-      int curRow = any_cast<int>(i_ptrState->GetValue("ROW"));
-      int curCol = any_cast<int>(i_ptrState->GetValue("COLUMN"));
+      int curRow = i_ptrState->GetValue("ROW");
+      int curCol = i_ptrState->GetValue("COLUMN");
       i_ptrState->SetValue("COLUMN", applyColBounds(curCol + m_x));
       i_ptrState->SetValue("ROW", applyRowBounds(curRow + m_y + i_wind[curCol]));
     }
@@ -63,7 +62,7 @@ protected:
   /** @brief Wind map */
   std::map<int, int>    m_wind;
   /** @brief Actions array */
-  std::vector<boost::shared_ptr<CGridWorldAction> >
+  std::vector<std::shared_ptr<CGridWorldAction> >
                         m_actions;
 };
 

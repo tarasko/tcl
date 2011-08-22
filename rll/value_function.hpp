@@ -22,10 +22,10 @@ namespace tcl { namespace rll {
 class CValueFunction 
 {
 public:
-    typedef std::vector<std::pair<CVectorDblPtr, double> > CUpdateList;
+    typedef std::vector<std::pair<CVectorRlltPtr, double> > CUpdateList;
 
     /** @brief Return value for internal representation of state */
-    virtual double GetValue(const CVectorDblPtr& i_ptrState) = 0;
+    virtual double GetValue(const CVectorRlltPtr& i_ptrState) = 0;
 
     /** @brief Correct value function according update map */
     virtual void Update(const CUpdateList& i_list) = 0;
@@ -38,11 +38,9 @@ public:
       , int i_agent
       ) 
     {
-        CVectorDblPtr ptrIntState = translate(i_ptrState, i_ptrAction, i_agent);
+        CVectorRlltPtr ptrIntState = translate(i_ptrState, i_ptrAction, i_agent);
         return GetValue(ptrIntState);
     }
 };
-
-typedef std::shared_ptr<CValueFunction> CValueFunctionPtr;
 
 }}

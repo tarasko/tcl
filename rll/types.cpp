@@ -4,12 +4,12 @@
 
 namespace tcl { namespace rll {
 
-CVectorDblPtr translate(
+CVectorRlltPtr translate(
     const CStatePtr& i_ptrState
   , const CActionPtr& i_ptrAction
   , int i_agent) 
 {
-    CVectorDblPtr ptrRet = i_ptrState->GetData();
+    CVectorRlltPtr ptrRet = i_ptrState->GetData();
 
     if (i_ptrAction) {
         ptrRet->push_back(i_ptrAction->GetData());
