@@ -47,15 +47,15 @@ public:
     typedef std::multimap<double, CStatePtr> CValueStateMap;
 
 protected:
-    /// @brief Process episode as states method.
-    virtual void processEpisode(unsigned int i_episode);
+    /// @brief Update value function for specific agent with new reward
+    virtual void updateValueFunctionImpl(int i_agentIndex, double i_reward) = 0;
 
-    /// @brief Update value functions for previous states using last rewards.
-    virtual CVectorRlltPtr updateValueFunction(
-        int i_agentIndex
-      , double i_reward
-      , bool i_terminal
-      ) = 0;
+    /// @brief Update value function for all agents cause terminal state was reached
+    virtual void updateValueFunctionOnTerminalImpl(const CVectorDbl& rewards) = 0;
+
+private:
+    /// @brief Process episode as states method.
+    void processEpisode(unsigned int i_episode);
 
     CEnvState* m_pEnv;  //!< Environment
 };
@@ -73,27 +73,17 @@ public:
     typedef std::multimap<double, CActionPtr> CValueActionMap;
 
 protected:
-    /// @brief Process episode as actions-states method.
-    /// It guaranties that updateValueFunction with terminal flag as 'true' will 
-    /// never be called for first agent action.
-    virtual void processEpisode(unsigned int i_episode);
+    /// @brief Update value function for specific agent with new reward
+    virtual void updateValueFunctionImpl(int i_agentIndex, double i_reward) = 0;
 
-    /// @brief Update value functions for previous act.-st. using last rewards.
-    virtual CVectorRlltPtr updateValueFunction(
-        int i_agentIndex
-      , double i_reward
-      , bool i_terminal
-      ) = 0;
+    /// @brief Update value function for all agents cause terminal state was reached
+    virtual void updateValueFunctionOnTerminalImpl(const CVectorDbl& rewards) = 0;
 
 private:
-    void performAgentUpdate(const CVectorDbl& i_rewards);
+    /// @brief Process episode as actions-states method.
+    virtual void processEpisode(unsigned int i_episode);
 
-protected:
-    CEnvAction* m_pEnv;               //!< Environment
-    CActionPtr m_ptrPerformedAction;  //!< Performed action
-    double m_performedValue;          //!< Performed action value
-    CActionPtr m_ptrGreedyAction;     //!< Greedy action
-    double m_greedyValue;             //!< Greedy action value
+    CEnvAction* m_pEnv;  //!< Environment
 };
 
 /// @brief Translate from external state to internal.

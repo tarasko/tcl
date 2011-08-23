@@ -47,15 +47,10 @@ CVectorRlltPtr CState::GetData() const
 {
     CVectorRlltPtr result = std::make_shared<CVectorDbl>(m_vars.size());
 
-    std::transform(
-        m_vars.begin()
-      , m_vars.end()
-      , result->begin()
-      , [](CVarMap::const_reference r) 
-        {
-            return r.second;
-        }
-      );
+    std::transform(m_vars.begin(), m_vars.end(), result->begin(), [](CVarMap::const_reference r) 
+    {
+        return r.second;
+    });
 
     return result;
 }

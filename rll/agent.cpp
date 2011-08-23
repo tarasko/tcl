@@ -1,4 +1,5 @@
 #include "agent.hpp"
+#include "value_function.hpp"
 
 #include <cassert>
 #include <algorithm>
@@ -7,14 +8,17 @@ using std::make_pair;
 
 namespace tcl { namespace rll {
 
-CAgent::CAgent(const CValueFunctionPtr& i_ptrFunc) 
-    : m_reward(0.0)
-    , m_ptrFunc(i_ptrFunc) 
+CAgent::CAgent(const CValueFunctionPtr& i_ptrFunc) : m_ptrFunc(i_ptrFunc) 
 {
     assert(m_ptrFunc != NULL);
 }
 
-void CAgent::UpdateTrace(
+double CAgent::getValue(const CVectorRlltPtr& i_ptrState)
+{
+    return m_ptrFunc->GetValue(i_ptrState);
+}
+
+void CAgent::updateTrace(
     const CVectorRlltPtr& i_ptrState
   , bool i_accum
   , double i_etEpsilon
@@ -56,10 +60,8 @@ void CAgent::UpdateTrace(
       );
 }
 
-void CAgent::Clean() 
+void CAgent::clean() 
 {
-    // Reset accumulated reward
-    m_reward = 0.0;
     // Set m_ptrPrevState to NULL
     m_ptrPrevState.reset();
     // Clean traces

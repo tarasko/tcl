@@ -12,9 +12,9 @@ public:
     CNeuronalNetwork(const CConfigPtr& i_ptrConfig);
 
     /// @brief Return value for internal representation of state.
-    virtual double GetValue(const CVectorRlltPtr& i_ptrState);
+    virtual double getValue(const CVectorRlltPtr& i_ptrState);
     /// @brief Correct value function according update map
-    virtual void Update(const CUpdateList& i_list);
+    virtual void update(const CUpdateList& i_list);
 
 protected:
     /// @brief Wrap neuronal network created by FANN library

@@ -43,7 +43,7 @@ public:
     }
 
     /// @brief Incremental training on examples.
-    void Update(const CUpdateList& i_list) 
+    void update(const CUpdateList& i_list) 
     {
         if (i_list.empty()) {
             return;
@@ -84,7 +84,7 @@ public:
     }
 
     /// @brief Return value for internal representation of state.
-    virtual double GetValue(const CVectorRlltPtr& i_ptrState) {
+    virtual double getValue(const CVectorRlltPtr& i_ptrState) {
         if (i_ptrState->empty()) {
             return 0.0;
         }
@@ -114,7 +114,7 @@ CNeuronalNetwork::CNeuronalNetwork(const CConfigPtr& i_ptrConfig)
 {
 }
 
-double CNeuronalNetwork::GetValue(const CVectorRlltPtr& i_ptrState) {
+double CNeuronalNetwork::getValue(const CVectorRlltPtr& i_ptrState) {
     if (i_ptrState->empty()) {
         return 0.0;
     }
@@ -123,10 +123,10 @@ double CNeuronalNetwork::GetValue(const CVectorRlltPtr& i_ptrState) {
         m_pFann = new CFannWrapper((int)i_ptrState->size(), m_ptrConfig);
     }
 
-    return m_pFann->GetValue(i_ptrState);
+    return m_pFann->getValue(i_ptrState);
 }
 
-void CNeuronalNetwork::Update(const CUpdateList& i_map) {
+void CNeuronalNetwork::update(const CUpdateList& i_map) {
     if (i_map.empty()) {
         return;
     }
@@ -135,7 +135,7 @@ void CNeuronalNetwork::Update(const CUpdateList& i_map) {
         m_pFann = new CFannWrapper((int)i_map[0].first->size(), m_ptrConfig);
     }
 
-    return m_pFann->Update(i_map);
+    return m_pFann->update(i_map);
 }
 
 }}

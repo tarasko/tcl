@@ -1,6 +1,11 @@
 #pragma once
 
 #include "method.hpp"
+#include "detail/utils.hpp"
+
+#include <unordered_map>
+#include <vector>
+#include <utility>
 
 namespace tcl { namespace rll {
 
@@ -17,23 +22,23 @@ public:
     {
     }
 
-protected:
-    /// @brief Update value functions for previous states using last rewards.
-    virtual CVectorRlltPtr updateValueFunction(
-        int i_agentIndex
-      , double i_reward
-      , bool i_terminal
-      );
+private:
+    typedef std::unordered_map<
+        CVectorRlltPtr
+      , double
+      , detail::EvalVectorRlltPtrHash
+      , detail::IsEqualVectorRlltPtr
+      > CTraceMap;
 
-    /// @brief Return previous state for agent.
-    ///
-    /// If agent already has previous internal state then return it. If not then
-    /// take environment previous state. Change last member which identifies agent 
-    /// to i_agent and return it. This is the way to make previous states for 
-    /// initial states.
-    ///
-    /// @param i_agent - agent index
-    CVectorRlltPtr getPreviousState(int i_agentIndex);
+    typedef std::vector<CTraceMap> CTraces;
+
+    /// @brief Update value function for specific agent with new reward
+    void updateValueFunctionImpl(int i_agentIndex, double i_reward);
+
+    /// @brief Update value function for all agents cause terminal state was reached
+    void updateValueFunctionOnTerminalImpl(const CVectorDbl& rewards);
+
+    CTraces m_traces;
 };
 
 /// @brief Sarsa method for state value function.

@@ -8,24 +8,7 @@
 
 namespace tcl { namespace rll { 
 
-CVectorRlltPtr CLambdaTD::getPreviousState(int i_agentIndex) 
-{
-    CAgentPtr ptrAgent = m_pEnv->m_agents[i_agentIndex];
-    if (ptrAgent->m_ptrPrevState != NULL) {
-        return ptrAgent->m_ptrPrevState;
-    }
-
-    // IMPORTANT: Make copy of current state
-    assert(m_pEnv != NULL);
-    ptrAgent->m_ptrPrevState = translate(m_pEnv->m_ptrPrevState, CActionPtr(), i_agentIndex);
-    return ptrAgent->m_ptrPrevState;
-}
-
-CVectorRlltPtr CLambdaTD::updateValueFunction(
-    int i_agentIndex
-  , double i_reward
-  , bool i_terminal
-  ) 
+void CLambdaTD::updateValueFunctionImpl(int i_agentIndex, double i_reward)
 {
     CVectorRlltPtr ptrState = translate(m_pEnv->m_ptrState, CActionPtr(), i_agentIndex);
     CVectorRlltPtr ptrPrevState = getPreviousState(i_agentIndex);
@@ -71,6 +54,19 @@ CVectorRlltPtr CLambdaTD::updateValueFunction(
     ptrAgent->m_ptrFunc->Update(update);
 
     return ptrState;
+}
+
+CVectorRlltPtr CLambdaTD::getPreviousState(int i_agentIndex) 
+{
+    CAgentPtr ptrAgent = m_pEnv->agents()[i_agentIndex];
+    if (ptrAgent->m_ptrPrevState != NULL) {
+        return ptrAgent->m_ptrPrevState;
+    }
+
+    // IMPORTANT: Make copy of current state
+    assert(m_pEnv != NULL);
+    ptrAgent->m_ptrPrevState = translate(m_pEnv->m_ptrPrevState, CActionPtr(), i_agentIndex);
+    return ptrAgent->m_ptrPrevState;
 }
 
 /** @todo Avoid repeating of calculation value function */
