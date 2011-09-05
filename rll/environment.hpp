@@ -42,15 +42,6 @@ public:
     std::vector<CAgentPtr>& agents();
     const std::vector<CAgentPtr>& agents() const;
 
-    /// @brief Set current state.
-    void setCurrentState(const CStatePtr& state);
-
-    /// @brief Get current state.
-    CStatePtr currentState() const;
-
-    /// @brief Get previous state, return 0 if there is no previous state.
-    CStatePtr previousState() const;
-
 	/// @brief Return current episode
 	unsigned int episode() const;
 
@@ -86,9 +77,6 @@ protected:
 private:
     std::vector<CAgentPtr> m_agents; //!< Agents vector
 
-    CStatePtr m_ptrState;            //!< Current environment state
-    CStatePtr m_ptrPrevState;        //!< Previous environment state
-
     unsigned int m_episode;          //!< Current episode
 	unsigned int m_step;			 //!< Current step in episode
 };
@@ -99,8 +87,21 @@ class CEnvState : public CEnvBase
 public:
     typedef std::vector<CStatePtr> CPossibleStates;
 
+    /// @brief Set current state.
+    void setCurrentState(const CStatePtr& state);
+
+    /// @brief Get current state.
+    CStatePtr currentState() const;
+
+    /// @brief Get previous state, return 0 if there is no previous state.
+    CStatePtr previousState() const;
+
     /// @brief Get possible next states from current state
     virtual void fillPossibilities(CPossibleStates& o_states) = 0;
+
+private:
+    CStatePtr m_ptrState;            //!< Current environment state
+    CStatePtr m_ptrPrevState;        //!< Previous environment state
 };
 
 /// @brief Environment for state-action value function.
@@ -109,12 +110,30 @@ class CEnvAction : public CEnvBase
 public:
     typedef std::vector<CActionPtr> CPossibleActions;
 
+public:
+    CStatePtr currentState() const;
+    void setCurrentState(const CStatePtr& i_state);
+
+    CActionPtr currentAction() const;
+    void setCurrentAction(const CActionPtr& i_action);
+
+    CStatePtr previousState() const;
+    CActionPtr previousAction() const;
+
+public:
     /// @brief Get next state and possible actions from next state
     /// @return Next state according to m_ptrAction
     virtual void fillPossibilities(CPossibleActions& o_actions) = 0;
 
     /// @brief Return next state by previous state and performed action
     virtual void doAction(const CActionPtr& i_ptrAction) = 0;
+
+private:
+    CStatePtr m_ptrState;
+    CActionPtr m_ptrAction;
+
+    CStatePtr m_ptrPrevState;
+    CActionPtr m_ptrPrevAction;
 };
 
 inline CEnvBase::CEnvBase() : m_episode(unsigned int(-1))
@@ -154,22 +173,6 @@ inline const std::vector<CAgentPtr>& CEnvBase::agents() const
     return m_agents;
 }
 
-inline void CEnvBase::setCurrentState(const CStatePtr& state)
-{
-    m_ptrPrevState = m_ptrState;
-    m_ptrState = state;
-}
-
-inline CStatePtr CEnvBase::currentState() const
-{
-    return m_ptrState;
-}
-
-inline CStatePtr CEnvBase::previousState() const
-{
-    return m_ptrPrevState;
-}
-
 inline unsigned int CEnvBase::episode() const
 {
 	return m_episode;
@@ -178,6 +181,54 @@ inline unsigned int CEnvBase::episode() const
 inline unsigned int CEnvBase::step() const
 {
 	return m_step;
+}
+
+inline void CEnvState::setCurrentState(const CStatePtr& state)
+{
+    m_ptrPrevState = m_ptrState;
+    m_ptrState = state;
+}
+
+inline CStatePtr CEnvState::currentState() const
+{
+    return m_ptrState;
+}
+
+inline CStatePtr CEnvState::previousState() const
+{
+    return m_ptrPrevState;
+}
+
+inline CStatePtr CEnvAction::currentState() const
+{
+    return m_ptrState;
+}
+
+inline void CEnvAction::setCurrentState(const CStatePtr& i_state)
+{
+    m_ptrPrevState = m_ptrState;
+    m_ptrState = i_state;
+}
+
+inline CActionPtr CEnvAction::currentAction() const
+{
+    return m_ptrAction;
+}
+
+inline void CEnvAction::setCurrentAction(const CActionPtr& i_action)
+{
+    m_ptrPrevAction = m_ptrAction;
+    m_ptrAction = i_action;
+}
+
+inline CStatePtr CEnvAction::previousState() const
+{
+    return m_ptrPrevState;
+}
+
+inline CActionPtr CEnvAction::previousAction() const
+{
+    return m_ptrPrevAction;
 }
 
 }}

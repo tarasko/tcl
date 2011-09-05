@@ -73,6 +73,7 @@ void CStateMethod::processEpisode(unsigned int i_episode)
 		if (finished) 
         {
             CVectorDbl terminalRewards = m_pEnv->observeTerminalRewards();
+            terminalRewards[activeAgentIdx] = 0.0;
             updateValueFunctionOnTerminalImpl(m_pEnv, terminalRewards);
         } 
     }
