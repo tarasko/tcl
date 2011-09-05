@@ -35,7 +35,7 @@ class fixed_allocator : FallbackAllocator
     typedef typename FallbackAllocator::template rebind<char>::other
         char_allocator;
 
-    // Pass it to fixed_pool template parameter. Now we are ensured we have 
+    // Pass it to fixed_pool template parameter. Now we are ensured we have
     // absolutely same fixed_pool type among our rebinding. Copy constructor
     // from rebinded allocator can just copy construct fixed_pool_ptr.
     typedef fixed_pool<char_allocator>
@@ -85,14 +85,12 @@ public:
     void deallocate(pointer p, size_type n);
 
     size_type max_size() const;
+    fixed_pool_ptr pool() const;
 
     void construct(pointer p, const_reference val);
     void destroy(pointer p);
 
 private:
-#ifdef _MSC_VER
-    friend class fixed_allocator;
-#endif
     fixed_pool_ptr   pool_;
 };
 
@@ -104,7 +102,7 @@ fixed_allocator<T, ChunksNum, FallbackAllocator>::fixed_allocator()
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
 template<typename T1, typename FallbackAllocator1>
 fixed_allocator<T, ChunksNum, FallbackAllocator>::fixed_allocator(const fixed_allocator<T1, ChunksNum, FallbackAllocator1>& other)
-    : pool_(other.pool_)
+    : pool_(other.pool())
 {
 }
 
@@ -158,6 +156,13 @@ fixed_allocator<T, ChunksNum, FallbackAllocator>::max_size() const -> size_type
 {
     // unimplemented
     return std::numeric_limits<size_type>::max BOOST_PREVENT_MACRO_SUBSTITUTION();
+}
+
+template<typename T, unsigned short ChunksNum, typename FallbackAllocator>
+auto
+fixed_allocator<T, ChunksNum, FallbackAllocator>::pool() const -> fixed_pool_ptr
+{
+    return pool_;
 }
 
 template<typename T, unsigned short ChunksNum, typename FallbackAllocator>

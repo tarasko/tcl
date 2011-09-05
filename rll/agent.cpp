@@ -8,21 +8,21 @@ using std::make_pair;
 
 namespace tcl { namespace rll {
 
-CAgent::CAgent(const CValueFunctionPtr& i_ptrFunc) : m_ptrFunc(i_ptrFunc) 
+CAgent::CAgent(const CValueFunctionPtr& i_ptrFunc) : m_ptrFunc(i_ptrFunc)
 {
-    assert(m_ptrFunc != NULL);
+    assert(m_ptrFunc);
 }
 
 double CAgent::getValue(const CVectorRlltPtr& i_ptrState)
 {
-    return m_ptrFunc->GetValue(i_ptrState);
+    return m_ptrFunc->getValue(i_ptrState);
 }
 
 void CAgent::updateTrace(
     const CVectorRlltPtr& i_ptrState
   , bool i_accum
   , double i_etEpsilon
-  ) 
+  )
 {
     // Search trace
     CTracesMap::iterator i = std::find_if(
@@ -51,7 +51,7 @@ void CAgent::updateTrace(
         }
     }
 
-    // Ok run over traces and remove elements with trace less then 
+    // Ok run over traces and remove elements with trace less then
     // i_etEpsilon
     m_traces.remove_if([i_etEpsilon](CTracesMap::const_reference r)
         {
@@ -60,7 +60,7 @@ void CAgent::updateTrace(
       );
 }
 
-void CAgent::clean() 
+void CAgent::clean()
 {
     // Set m_ptrPrevState to NULL
     m_ptrPrevState.reset();

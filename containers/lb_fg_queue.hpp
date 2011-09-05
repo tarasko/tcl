@@ -22,15 +22,15 @@ struct lb_fg_queue_node
 }
 
 template<typename T, typename Allocator = std::allocator<T> >
-class lb_fg_queue : Allocator::rebind<detail::lb_fg_queue_node<T> >::other
+class lb_fg_queue : Allocator::template rebind<detail::lb_fg_queue_node<T> >::other
 {
-    typedef typename Allocator::rebind<detail::lb_fg_queue_node<T> >::other node_allocator;
+    typedef typename Allocator::template rebind<detail::lb_fg_queue_node<T> >::other node_allocator;
     typedef detail::lb_fg_queue_node<T> node;
 
 public:
     lb_fg_queue(const Allocator& allocator = Allocator())
     : node_allocator(allocator)
-    , head_(allocate(1))
+    , head_(node_allocator::allocate(1))
     , tail_(head_)
     {
         // We have just inserted dummy empty node
@@ -59,7 +59,7 @@ public:
         }
 
         result = std::move(old_head->data_);
-        allocators::destroy(*(node_allocator*)this, old_head); 
+        allocators::destroy(*(node_allocator*)this, old_head);
 
         return true;
     }

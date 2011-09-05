@@ -1,7 +1,7 @@
 #pragma once
 
 #include <vector>
-#include <exception>
+#include <stdexcept>
 #include <memory>
 
 #if defined(TCL_RLL_DOUBLE)
@@ -15,10 +15,10 @@ typedef int rll_type;
 #endif
 
 #define DEFINE_EXCEPTION(_className)                                          \
-struct _className : std::exception                                            \
+struct _className : std::runtime_error                                        \
 {                                                                             \
-    _className() {}                                                           \
-    _className(const char* i_desc) : exception(i_desc) {}                     \
+    _className() : runtime_error( "CRLException" ) {}                         \
+    _className(const char* i_desc) : runtime_error(i_desc) {}                 \
 };
 
 namespace tcl { namespace rll {
