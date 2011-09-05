@@ -24,8 +24,9 @@ struct _className : std::runtime_error                                        \
 namespace tcl { namespace rll {
 
 typedef std::vector<double> CVectorDbl;
+typedef std::vector<int> CVectorInt;
 typedef std::vector<rll_type> CVectorRllt;
-typedef std::shared_ptr<CVectorDbl> CVectorRlltPtr;
+typedef std::shared_ptr<CVectorRllt> CVectorRlltPtr;
 
 DEFINE_EXCEPTION(CRLException)
 

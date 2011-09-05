@@ -4,7 +4,7 @@ using namespace std;
 
 namespace tcl { namespace rll {
 
-double CLookupTable::GetValue(const CVectorRlltPtr& i_ptrState) 
+double CLookupTable::getValue(const CVectorRlltPtr& i_ptrState) 
 {
     CValueMap::iterator i = m_values.find(i_ptrState);
     if (i != m_values.end()) {
@@ -15,7 +15,7 @@ double CLookupTable::GetValue(const CVectorRlltPtr& i_ptrState)
     }
 }
 
-void CLookupTable::Update(const CUpdateList& i_list) 
+void CLookupTable::update(const CUpdateList& i_list) 
 {
     for (CUpdateList::const_iterator i = i_list.begin(); i != i_list.end(); ++i) 
     {

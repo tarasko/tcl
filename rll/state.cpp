@@ -45,9 +45,9 @@ rll_type CState::GetValue(const std::string& i_name)
 
 CVectorRlltPtr CState::GetData() const 
 {
-    CVectorRlltPtr result = std::make_shared<CVectorDbl>(m_vars.size());
+    CVectorRlltPtr result = std::make_shared<CVectorRllt>((size_t)m_vars.size());
 
-    std::transform(m_vars.begin(), m_vars.end(), result->begin(), [](CVarMap::const_reference r) 
+    std::transform(m_vars.begin(), m_vars.end(), result->begin(), [](CVarMap::const_reference r) -> rll_type
     {
         return r.second;
     });

@@ -48,10 +48,10 @@ public:
 
 protected:
     /// @brief Update value function for specific agent with new reward
-    virtual void updateValueFunctionImpl(int i_agentIndex, double i_reward) = 0;
+    virtual void updateValueFunctionImpl(CEnvState* i_env, int i_agentIndex, double i_reward) = 0;
 
     /// @brief Update value function for all agents cause terminal state was reached
-    virtual void updateValueFunctionOnTerminalImpl(const CVectorDbl& rewards) = 0;
+    virtual void updateValueFunctionOnTerminalImpl(CEnvState* i_env, const CVectorDbl& rewards) = 0;
 
 private:
     /// @brief Process episode as states method.
@@ -85,15 +85,5 @@ private:
 
     CEnvAction* m_pEnv;  //!< Environment
 };
-
-/// @brief Translate from external state to internal.
-///
-/// If we use state value function pass null action pointer.
-/// Active agent index append to vector as last element
-CVectorRlltPtr translate(
-    const CStatePtr& i_ptrState
-  , const CActionPtr& i_ptrAction
-  , int i_agent
-  );
 
 }}

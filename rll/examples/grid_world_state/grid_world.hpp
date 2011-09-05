@@ -1,31 +1,26 @@
-#ifndef __GRIDWORLD_H__
-#define __GRIDWORLD_H__
+#pragma once
 
 #include <tcl/rll/rll.hpp>
 
-class CGridWorld :
-    public tcl::rll::CEnvState {
+class CGridWorld : public tcl::rll::CEnvState 
+{
 public:
-  CGridWorld(void);
+	CGridWorld(void);
 
-  virtual void          initEpisode();
-  /** @brief Return true if we reached terminal state */
-  virtual bool          isEpisodeFinished();
-  /** @brief Get possible next states from current state */
-  virtual void          fillPossibilities(CPossibleStates& o_states);
-  /** @brief Return reward after we get to new state */
-  virtual void          observeRewards(tcl::rll::CVectorDbl& o_rewards);
+	void PrintValueFunc();
 
-  void                  PrintValueFunc();
+private:
+	virtual void initEpisodeImpl();
+	virtual void fillPossibilities(CPossibleStates& o_states);
+	virtual bool observeRewardImpl(double& o_reward) const;
+	virtual tcl::rll::CVectorDbl observeTerminalRewardsImpl() const;
+    virtual int selectNextAgentImpl();
 
-protected:
-  bool                  isTerminalState(tcl::rll::CStatePtr i_ptrState);
+	static bool isTerminalState(tcl::rll::CStatePtr i_ptrState);
 
-  int                   applyRowBounds(int i_row);
-  int                   applyColBounds(int i_col);
+	int applyRowBounds(int i_row);
+	int applyColBounds(int i_col);
 
-  /** @brief Wind map */
-  std::map<int, int>    m_wind;
+	/** @brief Wind map */
+	std::map<int, int> m_wind;
 };
-
-#endif //__GRIDWORLD_H__

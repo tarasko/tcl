@@ -21,9 +21,12 @@ public:
   /** @name Set of logging functions */
   //@{
   void                  Print(const char* i_who, const char* i_desc);
-  void                  Print(const CVectorDbl& i_vector);
+
+  void                  Print(const CVectorRllt& i_vector);
+
   void                  Print(const char* i_who, const char* i_desc,
-                              const CVectorDbl& i_vector);
+                              const CVectorRllt& i_vector);
+
   void                  Print(const char* i_who, const char* i_desc,
                               CValueFunction::CUpdateList& i_list);
   void                  Print(fann_train_data i_td);

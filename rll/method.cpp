@@ -5,6 +5,7 @@
 #include "action.hpp"
 
 #include "detail/logger.hpp"
+#include "detail/utils.hpp"
 
 #include <functional>
 #include <random>
@@ -31,10 +32,9 @@ void CStateMethod::processEpisode(unsigned int i_episode)
     m_pEnv->initEpisode();
 
     bool finished = false;
-    unsigned int step = 0;
 
     // Do episode until we get terminal state
-    for(bool finished = false; !finished; ++step)
+    for(bool finished = false; !finished;)
     {
         // Select active agent
         int activeAgentIdx = m_pEnv->selectNextAgent();
@@ -55,7 +55,7 @@ void CStateMethod::processEpisode(unsigned int i_episode)
           , [&](CEnvState::CPossibleStates::const_reference r)
             {
                 double stateValue = activeAgent->getValue(
-                    translate(r, CActionPtr(), activeAgentIdx)
+                    detail::translate(r, CActionPtr(), activeAgentIdx)
                   );
                 variants.insert(std::make_pair(stateValue, r));
             }
@@ -68,14 +68,13 @@ void CStateMethod::processEpisode(unsigned int i_episode)
         // Get reward for agent 
         double reward;
         finished = m_pEnv->observeReward(reward);
+        updateValueFunctionImpl(m_pEnv, activeAgentIdx, reward);
 
-        if (finished) 
+		if (finished) 
         {
             CVectorDbl terminalRewards = m_pEnv->observeTerminalRewards();
-            updateValueFunctionOnTerminalImpl(terminalRewards);
+            updateValueFunctionOnTerminalImpl(m_pEnv, terminalRewards);
         } 
-        else 
-            updateValueFunctionImpl(activeAgentIdx, reward);
     }
 }
 
@@ -83,10 +82,8 @@ void CActionMethod::processEpisode(unsigned int i_episode)
 {
     m_pEnv->initEpisode();
 
-    unsigned int step = 0;
-
     // Do episode until we get terminal state
-    for(bool finished = false; !finished; ++step)
+    for(bool finished = false; !finished;)
     {
         // Select active agent
         int activeAgentIdx = m_pEnv->selectNextAgent();
@@ -108,7 +105,7 @@ void CActionMethod::processEpisode(unsigned int i_episode)
           , [&](CEnvAction::CPossibleActions::const_reference r) 
             {
                 double actionValue = activeAgent->getValue(
-                    translate(currentState, r, activeAgentIdx)
+                    detail::translate(currentState, r, activeAgentIdx)
                   );
                 variants.insert(std::make_pair(actionValue, r));
             }
@@ -123,14 +120,13 @@ void CActionMethod::processEpisode(unsigned int i_episode)
         // Get reward for agent 
         double reward;
         finished = m_pEnv->observeReward(reward);
+        updateValueFunctionImpl(activeAgentIdx, reward);
 
         if (finished) 
         {
             CVectorDbl terminalRewards = m_pEnv->observeTerminalRewards();
             updateValueFunctionOnTerminalImpl(terminalRewards);
         } 
-        else 
-            updateValueFunctionImpl(activeAgentIdx, reward);
     }
 }
 

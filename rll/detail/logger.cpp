@@ -23,20 +23,20 @@ void CLogger::Enable(bool i_enable)
 void CLogger::Print(
     const char* i_who
   , const char* i_desc
-  , const CVectorDbl& i_vector
+  , const CVectorRllt& i_vector
   ) 
 {
     Print(i_who, i_desc);
     Print(i_vector);
 }
 
-void CLogger::Print(const CVectorDbl& i_vector) 
+void CLogger::Print(const CVectorRllt& i_vector) 
 {
     if (!m_pFile) {
         return;
     }
 
-    for (CVectorDbl::const_iterator i = i_vector.begin(); i != i_vector.end(); ++i)  {
+    for (CVectorRllt::const_iterator i = i_vector.begin(); i != i_vector.end(); ++i)  {
         fprintf(m_pFile, TCL_RLL_TYPE_FOR_PRINTF " ", *i);
     }
     fprintf(m_pFile, "\n");

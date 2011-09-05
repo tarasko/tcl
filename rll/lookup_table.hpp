@@ -22,10 +22,10 @@ public:
     CLookupTable(double i_init = 0.0) : m_init(i_init) {}
 
     /// @brief Return value for internal representation of state.
-    virtual double GetValue(const CVectorRlltPtr& i_ptrState);
+    virtual double getValue(const CVectorRlltPtr& i_ptrState);
     /// @brief Correct value function according update map.
     /// @todo think about checkState for interger values
-    virtual void Update(const CUpdateList& i_list);
+    virtual void update(const CUpdateList& i_list);
 
 private:
 

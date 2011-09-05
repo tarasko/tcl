@@ -51,6 +51,12 @@ public:
     /// @brief Get previous state, return 0 if there is no previous state.
     CStatePtr previousState() const;
 
+	/// @brief Return current episode
+	unsigned int episode() const;
+
+	/// @brief Return current step
+	unsigned int step() const;
+
 protected:
 
     /// @name Methods that should be overrided by user
@@ -84,6 +90,7 @@ private:
     CStatePtr m_ptrPrevState;        //!< Previous environment state
 
     unsigned int m_episode;          //!< Current episode
+	unsigned int m_step;			 //!< Current step in episode
 };
 
 /// @brief Environment for state value function.
@@ -94,11 +101,6 @@ public:
 
     /// @brief Get possible next states from current state
     virtual void fillPossibilities(CPossibleStates& o_states) = 0;
-
-    /// @brief Value function cache.
-    /// Contains already calculated value for m_ptrState and active agent.
-    /// Can be helpfull in updateValueFunction implementation.
-    // double m_cache;
 };
 
 /// @brief Environment for state-action value function.
@@ -121,13 +123,8 @@ inline CEnvBase::CEnvBase() : m_episode(unsigned int(-1))
 
 inline void CEnvBase::initEpisode()
 {
-    m_ptrState.reset();
-    m_ptrPrevState.reset();
-
     ++m_episode;
-
-    std::for_each(m_agents.begin(), m_agents.end(), std::mem_fn(&CAgent::clean));
-
+	m_step = unsigned int(-1);
     initEpisodeImpl();
 }
 
@@ -143,6 +140,7 @@ inline CVectorDbl CEnvBase::observeTerminalRewards() const
 
 inline int CEnvBase::selectNextAgent()
 {
+	++m_step;
     return selectNextAgentImpl();
 }
     
@@ -170,6 +168,16 @@ inline CStatePtr CEnvBase::currentState() const
 inline CStatePtr CEnvBase::previousState() const
 {
     return m_ptrPrevState;
+}
+
+inline unsigned int CEnvBase::episode() const
+{
+	return m_episode;
+}
+
+inline unsigned int CEnvBase::step() const
+{
+	return m_step;
 }
 
 }}

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "method.hpp"
+#include "agent.hpp"
 #include "detail/utils.hpp"
 
 #include <unordered_map>
@@ -12,15 +13,13 @@ namespace tcl { namespace rll {
 /// @file Unified view for MC and TD methods.
 /// Use eligibility traces.
 /// Maintain distinct traces for every agent in system.
-
+/// Algorithm described in
+/// http://webdocs.cs.ualberta.ca/~sutton/book/ebook/node75.html
 /// @brief TD(lambda) method for state value function.
 class CLambdaTD : public CStateMethod 
 {
 public:
-    CLambdaTD(CEnvState* i_pEnv, CConfigPtr i_ptrConfig) 
-        : CStateMethod(i_pEnv, i_ptrConfig) 
-    {
-    }
+    CLambdaTD(CEnvState* i_pEnv, CConfigPtr i_ptrConfig);
 
 private:
     typedef std::unordered_map<
@@ -32,13 +31,29 @@ private:
 
     typedef std::vector<CTraceMap> CTraces;
 
+private:
+	/// @name CStateMethod implementation
+	/// @{
     /// @brief Update value function for specific agent with new reward
-    void updateValueFunctionImpl(int i_agentIndex, double i_reward);
+    void updateValueFunctionImpl(CEnvState* i_env, int i_agentIndex, double i_reward);
 
-    /// @brief Update value function for all agents cause terminal state was reached
-    void updateValueFunctionOnTerminalImpl(const CVectorDbl& rewards);
+    /// @brief Update value function for all agents because terminal state was reached
+    void updateValueFunctionOnTerminalImpl(CEnvState* i_env, const CVectorDbl& i_rewards);
+	/// @}
 
-    CTraces m_traces;
+	void prepareUpdates(
+		const CAgentPtr& i_ptrAgent
+	  , CTraceMap& io_agentTraces
+	  , const CVectorRlltPtr& i_stateForUpdate
+	  , double i_stateValue
+	  , double i_nextStateValue
+	  , double i_reward
+	  , CAgent::CUpdateList& o_updateList
+	  );
+
+private:
+    CTraces m_traces;       //!< Eligibility trace for each agent
+	CConfigPtr m_ptrConfig;
 };
 
 /// @brief Sarsa method for state value function.
@@ -51,12 +66,11 @@ public:
     }
 
 protected:
-    /// @brief Update value functions for previous act.-st. using last rewards.
-    virtual CVectorRlltPtr updateValueFunction(
-        int i_agentIndex
-      , double i_reward
-      , bool i_terminal
-      );
+    /// @brief Update value function for specific agent with new reward
+    void updateValueFunctionImpl(int i_agentIndex, double i_reward);
+
+    /// @brief Update value function for all agents cause terminal state was reached
+    void updateValueFunctionOnTerminalImpl(const CVectorDbl& rewards);
 };
 
 /// @brief Implements q-learning method with eligibility traces.
@@ -69,12 +83,11 @@ public:
     }
 
 protected:
-    /// @brief Update value functions for previous act.-st. using last rewards.
-    virtual CVectorRlltPtr updateValueFunction(
-        int i_agentIndex
-      , double i_reward
-      , bool i_terminal
-      );
+    /// @brief Update value function for specific agent with new reward
+    void updateValueFunctionImpl(int i_agentIndex, double i_reward);
+
+    /// @brief Update value function for all agents cause terminal state was reached
+    void updateValueFunctionOnTerminalImpl(const CVectorDbl& rewards);
 };
 
 }}
