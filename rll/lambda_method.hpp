@@ -13,9 +13,10 @@ namespace tcl { namespace rll {
 /// @file Unified view for MC and TD methods.
 /// Use eligibility traces.
 /// Maintain distinct traces for every agent in system.
+
+/// @brief On-policy TD(lambda) method for state value function.
 /// Algorithm described in
 /// http://webdocs.cs.ualberta.ca/~sutton/book/ebook/node75.html
-/// @brief TD(lambda) method for state value function.
 class CLambdaTD : public CStateMethod 
 {
 public:
@@ -41,22 +42,24 @@ private:
     void updateValueFunctionOnTerminalImpl(CEnvState* i_env, const CVectorDbl& i_rewards);
 	/// @}
 
-	void prepareUpdates(
-		const CAgentPtr& i_ptrAgent
-	  , CTraceMap& io_agentTraces
-	  , const CVectorRlltPtr& i_stateForUpdate
-	  , double i_stateValue
-	  , double i_nextStateValue
-	  , double i_reward
-	  , CAgent::CUpdateList& o_updateList
-	  );
+    void prepareUpdates(
+        const CAgentPtr& i_ptrAgent
+      , CTraceMap& io_agentTraces
+      , const CVectorRlltPtr& i_stateForUpdate
+      , double i_stateValue
+      , double i_nextStateValue
+      , double i_reward
+      , CAgent::CUpdateList& o_updateList
+      );
 
 private:
     CTraces m_traces;       //!< Eligibility trace for each agent
-	CConfigPtr m_ptrConfig;
+    CConfigPtr m_ptrConfig;
 };
 
-/// @brief Sarsa method for state value function.
+/// @brief On-policy TD(lambda) method for state-action value function.
+/// Algorithm described in
+/// http://webdocs.cs.ualberta.ca/~sutton/book/ebook/node64.html
 class CLambdaSarsa : public CActionMethod 
 {
 public:
@@ -73,7 +76,9 @@ protected:
     void updateValueFunctionOnTerminalImpl(const CVectorDbl& rewards);
 };
 
-/// @brief Implements q-learning method with eligibility traces.
+/// @brief Off-policy TD(lambda) method for state-action value function.
+/// Algorithm described in
+/// http://webdocs.cs.ualberta.ca/~sutton/book/ebook/node78.html
 class CLambdaWatkins : public CActionMethod 
 {
 public:

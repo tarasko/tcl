@@ -9,9 +9,9 @@
 namespace tcl { namespace rll { 
 
 CLambdaTD::CLambdaTD(CEnvState* i_pEnv, CConfigPtr i_ptrConfig) 
-	: CStateMethod(i_pEnv, i_ptrConfig)
-	, m_traces(i_pEnv->agents().size())
-	, m_ptrConfig(i_ptrConfig)
+    : CStateMethod(i_pEnv, i_ptrConfig)
+    , m_traces(i_pEnv->agents().size())
+    , m_ptrConfig(i_ptrConfig)
 {
 }
 
@@ -28,21 +28,21 @@ void CLambdaTD::prepareUpdates(
     double temp = i_reward - i_stateValue + m_ptrConfig->m_gamma * i_nextStateValue;
 
     // Update eligibility trace for state
-	// Accumulating traces: e(s) <- e(s) + 1
-	// Replacing traces: e(s) <- 1 
+    // Accumulating traces: e(s) <- e(s) + 1
+    // Replacing traces: e(s) <- 1 
     // Search trace
-	CTraceMap::iterator i = io_agentTraces.find(i_stateForUpdate);
+    CTraceMap::iterator i = io_agentTraces.find(i_stateForUpdate);
 
     if (io_agentTraces.end() == i) 
-	{
+    {
         // No trace found. Add it.
         io_agentTraces.insert(make_pair(i_stateForUpdate, 1.0));
     } 
-	else 
-	{
+    else 
+    {
         // Trace found. Update it.
         // Accumulating or replacing traces?
-		if (m_ptrConfig->m_accumulating)
+        if (m_ptrConfig->m_accumulating)
             ++i->second;
         else
             i->second = 1;
@@ -51,37 +51,37 @@ void CLambdaTD::prepareUpdates(
     // Fill update map
     // Run over all past agent states	
     for (CTraceMap::iterator i = io_agentTraces.begin(); i != io_agentTraces.end();) 
-	{
+    {
         double change = m_ptrConfig->m_alpha * temp * i->second;
         o_updateList.push_back(make_pair(i->first, i_ptrAgent->getValue(i->first) + change));
         // Reduce trace
-		// TODO: m_ptrConfig->m_lambda * m_ptrConfig->m_gamma we can do it on startup
-		i->second *= (m_ptrConfig->m_lambda * m_ptrConfig->m_gamma);
-		
-		// Erase traces that become less then m_ptrConfig->m_etEpsilon
-		if (i->second < m_ptrConfig->m_etEpsilon)
-		{
-			CTraceMap::iterator toDelete = i++;
-			io_agentTraces.erase(toDelete);
-		}
-		else 
-			++i;
+        // TODO: m_ptrConfig->m_lambda * m_ptrConfig->m_gamma we can do it on startup
+        i->second *= (m_ptrConfig->m_lambda * m_ptrConfig->m_gamma);
+
+        // Erase traces that become less then m_ptrConfig->m_etEpsilon
+        if (i->second < m_ptrConfig->m_etEpsilon)
+        {
+            CTraceMap::iterator toDelete = i++;
+            io_agentTraces.erase(toDelete);
+        }
+        else 
+            ++i;
     }
 }
 
 void CLambdaTD::updateValueFunctionImpl(CEnvState* i_env, int i_agentIndex, double i_reward)
 {
     CVectorRlltPtr ptrState = detail::translate(i_env->currentState(), CActionPtr(), i_agentIndex);
-	CVectorRlltPtr ptrPrevState = detail::translate(i_env->previousState(), CActionPtr(), i_agentIndex);
+    CVectorRlltPtr ptrPrevState = detail::translate(i_env->previousState(), CActionPtr(), i_agentIndex);
 
     CAgentPtr ptrAgent = i_env->agents()[i_agentIndex];
-	CTraceMap& agentTraces = m_traces[i_agentIndex];
+    CTraceMap& agentTraces = m_traces[i_agentIndex];
 
     double V = ptrAgent->getValue(ptrPrevState);
     double newV = ptrAgent->getValue(ptrState);
 
-	CAgent::CUpdateList updates;
-	prepareUpdates(ptrAgent, agentTraces, ptrPrevState, V, newV, i_reward, updates);
+    CAgent::CUpdateList updates;
+    prepareUpdates(ptrAgent, agentTraces, ptrPrevState, V, newV, i_reward, updates);
 
     g_log.Print("TD METHOD", "flushAgentRewards", updates);
 
@@ -91,25 +91,25 @@ void CLambdaTD::updateValueFunctionImpl(CEnvState* i_env, int i_agentIndex, doub
 
 void CLambdaTD::updateValueFunctionOnTerminalImpl(CEnvState* i_env, const CVectorDbl& rewards)
 {
-	// For each agent update value function
-	for(size_t agentIdx = 0; agentIdx < i_env->agents().size(); ++agentIdx) 
-	{
-		CVectorRlltPtr ptrState = detail::translate(i_env->currentState(), CActionPtr(), agentIdx);
+    // For each agent update value function
+    for(size_t agentIdx = 0; agentIdx < i_env->agents().size(); ++agentIdx) 
+    {
+        CVectorRlltPtr ptrState = detail::translate(i_env->currentState(), CActionPtr(), agentIdx);
 
-		CAgentPtr ptrAgent = i_env->agents()[agentIdx];
-		CTraceMap& agentTraces = m_traces[agentIdx];
+        CAgentPtr ptrAgent = i_env->agents()[agentIdx];
+        CTraceMap& agentTraces = m_traces[agentIdx];
 
-		double V = ptrAgent->getValue(ptrState);
-		double newV = 0;
+        double V = ptrAgent->getValue(ptrState);
+        double newV = 0;
 
-		CAgent::CUpdateList updates;
-		prepareUpdates(ptrAgent, agentTraces, ptrState, V, newV, rewards[agentIdx], updates);
+        CAgent::CUpdateList updates;
+        prepareUpdates(ptrAgent, agentTraces, ptrState, V, newV, rewards[agentIdx], updates);
 
-		g_log.Print("TD METHOD", "flushTerminalReward", updates);
+        g_log.Print("TD METHOD", "flushTerminalReward", updates);
 
-		// Update value function
-		ptrAgent->update(updates);
-	}
+        // Update value function
+        ptrAgent->update(updates);
+    }
 }
 
 void CLambdaSarsa::updateValueFunctionImpl(int i_agentIndex, double i_reward)
