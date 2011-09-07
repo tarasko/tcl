@@ -48,10 +48,18 @@ public:
 
 protected:
     /// @brief Update value function for specific agent with new reward
-    virtual void updateValueFunctionImpl(CEnvState* i_env, int i_agentIndex, double i_reward) = 0;
-
-    /// @brief Update value function for all agents cause terminal state was reached
-    virtual void updateValueFunctionOnTerminalImpl(CEnvState* i_env, const CVectorDbl& rewards) = 0;
+    /// @param activeAgent - current active agent
+    /// @param activeAgent - active agent index
+    /// @param newState - new state of environment right immediatelly after agent selection.
+    /// Can be null if this is post terminal state. Value function for post terminal state 
+    /// is always 0.
+    /// @param reward - reward that agent got by selecting @c newState
+    virtual void updateValueFunctionImpl(
+        const CAgentPtr& activeAgent
+      , int activeAgentIdx
+      , const CStatePtr& newState 
+      , double reward
+      ) = 0;
 
 private:
     /// @brief Process episode as states method.
@@ -75,9 +83,6 @@ public:
 protected:
     /// @brief Update value function for specific agent with new reward
     virtual void updateValueFunctionImpl(int i_agentIndex, double i_reward) = 0;
-
-    /// @brief Update value function for all agents cause terminal state was reached
-    virtual void updateValueFunctionOnTerminalImpl(const CVectorDbl& rewards) = 0;
 
 private:
     /// @brief Process episode as actions-states method.

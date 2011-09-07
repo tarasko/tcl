@@ -36,11 +36,13 @@ private:
 	/// @name CStateMethod implementation
 	/// @{
     /// @brief Update value function for specific agent with new reward
-    void updateValueFunctionImpl(CEnvState* i_env, int i_agentIndex, double i_reward);
-
-    /// @brief Update value function for all agents because terminal state was reached
-    void updateValueFunctionOnTerminalImpl(CEnvState* i_env, const CVectorDbl& i_rewards);
-	/// @}
+    void updateValueFunctionImpl(
+        const CAgentPtr& activeAgent
+      , int activeAgentIdx
+      , const CStatePtr& newState 
+      , double reward
+      );
+    /// @}
 
     void prepareUpdates(
         const CAgentPtr& i_ptrAgent
@@ -71,9 +73,6 @@ public:
 protected:
     /// @brief Update value function for specific agent with new reward
     void updateValueFunctionImpl(int i_agentIndex, double i_reward);
-
-    /// @brief Update value function for all agents cause terminal state was reached
-    void updateValueFunctionOnTerminalImpl(const CVectorDbl& rewards);
 };
 
 /// @brief Off-policy TD(lambda) method for state-action value function.
@@ -91,8 +90,6 @@ protected:
     /// @brief Update value function for specific agent with new reward
     void updateValueFunctionImpl(int i_agentIndex, double i_reward);
 
-    /// @brief Update value function for all agents cause terminal state was reached
-    void updateValueFunctionOnTerminalImpl(const CVectorDbl& rewards);
 };
 
 }}

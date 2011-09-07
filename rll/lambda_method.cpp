@@ -69,65 +69,42 @@ void CLambdaTD::prepareUpdates(
     }
 }
 
-void CLambdaTD::updateValueFunctionImpl(CEnvState* i_env, int i_agentIndex, double i_reward)
+void CLambdaTD::updateValueFunctionImpl(
+    const CAgentPtr& activeAgent
+  , int activeAgentIdx
+  , const CStatePtr& newState 
+  , double reward
+  )
 {
-    CVectorRlltPtr ptrState = detail::translate(i_env->currentState(), CActionPtr(), i_agentIndex);
-    CVectorRlltPtr ptrPrevState = detail::translate(i_env->previousState(), CActionPtr(), i_agentIndex);
+    CVectorRlltPtr ptrPrevState = 
+        detail::translate(activeAgent->lastStateWhenWasActive(), CActionPtr(), activeAgentIdx);
 
-    CAgentPtr ptrAgent = i_env->agents()[i_agentIndex];
-    CTraceMap& agentTraces = m_traces[i_agentIndex];
+    double V = activeAgent->getValue(ptrPrevState);
+    double newV = 0;
 
-    double V = ptrAgent->getValue(ptrPrevState);
-    double newV = ptrAgent->getValue(ptrState);
+    if (newState)
+    {
+        CVectorRlltPtr ptrState = detail::translate(newState, CActionPtr(), activeAgentIdx);
+        newV = activeAgent->getValue(ptrState);
+    }
 
+    CTraceMap& agentTraces = m_traces[activeAgentIdx];
     CAgent::CUpdateList updates;
-    prepareUpdates(ptrAgent, agentTraces, ptrPrevState, V, newV, i_reward, updates);
+    prepareUpdates(activeAgent, agentTraces, ptrPrevState, V, newV, reward, updates);
 
     g_log.Print("TD METHOD", "flushAgentRewards", updates);
 
     // Update value function
-    ptrAgent->update(updates);
-}
-
-void CLambdaTD::updateValueFunctionOnTerminalImpl(CEnvState* i_env, const CVectorDbl& rewards)
-{
-    // For each agent update value function
-    for(size_t agentIdx = 0; agentIdx < i_env->agents().size(); ++agentIdx) 
-    {
-        CVectorRlltPtr ptrState = detail::translate(i_env->currentState(), CActionPtr(), agentIdx);
-
-        CAgentPtr ptrAgent = i_env->agents()[agentIdx];
-        CTraceMap& agentTraces = m_traces[agentIdx];
-
-        double V = ptrAgent->getValue(ptrState);
-        double newV = 0;
-
-        CAgent::CUpdateList updates;
-        prepareUpdates(ptrAgent, agentTraces, ptrState, V, newV, rewards[agentIdx], updates);
-
-        g_log.Print("TD METHOD", "flushTerminalReward", updates);
-
-        // Update value function
-        ptrAgent->update(updates);
-    }
+    activeAgent->update(updates);
 }
 
 void CLambdaSarsa::updateValueFunctionImpl(int i_agentIndex, double i_reward)
 {
 }
 
-void CLambdaSarsa::updateValueFunctionOnTerminalImpl(const CVectorDbl& rewards)
-{
-}
-
 void CLambdaWatkins::updateValueFunctionImpl(int i_agentIndex, double i_reward)
 {
 }
-
-void CLambdaWatkins::updateValueFunctionOnTerminalImpl(const CVectorDbl& rewards)
-{
-}
-
 
 ///** @todo Avoid repeating of calculation value function */
 //CVectorRlltPtr CLambdaSarsa::updateValueFunction(

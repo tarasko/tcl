@@ -6,7 +6,6 @@
 #include <fstream>
 #include <iostream>
 
-using namespace tcl::rll;
 using namespace std;
 
 CGridWorld::CGridWorld(void) 
@@ -16,15 +15,13 @@ CGridWorld::CGridWorld(void)
     ptrConfig->m_enableLog = false;
 
     // Create state
-    CStatePtr ptrState(new CState);
-    ptrState->RegisterVariable("ROW");
-    ptrState->RegisterVariable("COLUMN");
-    setCurrentState(ptrState);
+    m_state = make_shared<CState>();
+    m_state->RegisterVariable("ROW");
+    m_state->RegisterVariable("COLUMN");
 
-    // Create value function and method
+    // Create value function and agent
     CValueFunctionPtr ptrFunc(new CLookupTable);
-    CAgentPtr ptrAgent(new CAgent(ptrFunc));
-    agents().push_back(ptrAgent);
+    agents().push_back(make_shared<CAgent>(ptrFunc));
 
     // Init wind
     m_wind[0] = 0;
@@ -41,84 +38,91 @@ CGridWorld::CGridWorld(void)
 
 void CGridWorld::initEpisodeImpl() 
 {
-    CStatePtr ptrState = currentState();
-    ptrState->SetValue("ROW", 3);
-    ptrState->SetValue("COLUMN", 0);
+    m_state->SetValue("ROW", 3);
+    m_state->SetValue("COLUMN", 0);
 }
 
-void CGridWorld::fillPossibilities(CPossibleStates& o_states) 
+size_t CGridWorld::activeAgentImpl() const
 {
-    // Spawn four new states which occurs after corresponding actions and choose 
-    // some according to policy
-    CStatePtr ptrState = currentState();
+    return 0;
+}
 
-    int curRow = ptrState->GetValue("ROW");
-    int curCol = ptrState->GetValue("COLUMN");
+CStatePtr CGridWorld::currentStateImpl() const
+{
+    return m_state;
+}
+
+bool CGridWorld::nextStepImpl()
+{
+    return !isTerminalState(currentState());
+}
+
+std::vector<CStatePtr> CGridWorld::getPossibleNextStatesImpl() const
+{
+    std::vector<CStatePtr> result;
+
+    int curRow = m_state->GetValue("ROW");
+    int curCol = m_state->GetValue("COLUMN");
 
     // Move left
     {
-        CStatePtr ptrNewState = ptrState->Clone();
+        CStatePtr ptrNewState = m_state->Clone();
         ptrNewState->SetValue("COLUMN", applyColBounds(curCol - 1));
-        ptrNewState->SetValue("ROW", applyRowBounds(curRow + m_wind[curCol]));
-        if (!ptrState->IsEqual(ptrNewState)) {
-            o_states.push_back(ptrNewState);
+        ptrNewState->SetValue("ROW", applyRowBounds(curRow + m_wind.at(curCol)));
+        if (!m_state->IsEqual(ptrNewState)) {
+            result.push_back(ptrNewState);
         }
     }
 
     // Move right
     {
-        CStatePtr ptrNewState = ptrState->Clone();
+        CStatePtr ptrNewState = m_state->Clone();
         ptrNewState->SetValue("COLUMN", applyColBounds(curCol + 1));
-        ptrNewState->SetValue("ROW", applyRowBounds(curRow + m_wind[curCol]));
-        if (!ptrState->IsEqual(ptrNewState)) {
-            o_states.push_back(ptrNewState);
+        ptrNewState->SetValue("ROW", applyRowBounds(curRow + m_wind.at(curCol)));
+        if (!m_state->IsEqual(ptrNewState)) {
+            result.push_back(ptrNewState);
         }
     }
 
     // Move top
     {
-        CStatePtr ptrNewState = ptrState->Clone();
-        ptrNewState->SetValue("ROW", applyRowBounds(curRow + 1 + m_wind[curCol]));
-        if (!ptrState->IsEqual(ptrNewState)) {
-            o_states.push_back(ptrNewState);
+        CStatePtr ptrNewState = m_state->Clone();
+        ptrNewState->SetValue("ROW", applyRowBounds(curRow + 1 + m_wind.at(curCol)));
+        if (!m_state->IsEqual(ptrNewState)) {
+            result.push_back(ptrNewState);
         }
     }
 
     // Move bottom
     {
-        CStatePtr ptrNewState = ptrState->Clone();
-        ptrNewState->SetValue("ROW", applyRowBounds(curRow - 1 + m_wind[curCol]));
-        if (!ptrState->IsEqual(ptrNewState)) {
-            o_states.push_back(ptrNewState);
+        CStatePtr ptrNewState = m_state->Clone();
+        ptrNewState->SetValue("ROW", applyRowBounds(curRow - 1 + m_wind.at(curCol)));
+        if (!m_state->IsEqual(ptrNewState)) {
+            result.push_back(ptrNewState);
         }
     }
+
+    return result;
 }
 
-bool CGridWorld::observeRewardImpl(double& o_reward) const 
+double CGridWorld::setNextStateObserveRewardImpl(const CStatePtr& state)
 {
-    o_reward = isTerminalState(currentState()) ? 1.0 : -1.0;
-    return isTerminalState(currentState());
+    m_state = state;
+    return isTerminalState(currentState()) ? 1.0 : -1.0;
 }
 
-tcl::rll::CVectorDbl CGridWorld::observeTerminalRewardsImpl() const
+CVectorDbl CGridWorld::observeTerminalRewardsImpl() const
 {
     std::cout << "Episode number:" << episode() << "\t" <<
         "Episode takes: " << step() << std::endl;
 
-    tcl::rll::CVectorDbl res;
-    res.push_back(1.0);
-    return res;
+    return CVectorDbl(1, 1.0);
 }
 
 bool CGridWorld::isTerminalState(CStatePtr i_ptrState) 
 {
     return i_ptrState->GetValue("ROW") == 3 && 
         i_ptrState->GetValue("COLUMN") == 7;
-}
-
-int CGridWorld::selectNextAgentImpl()
-{
-    return 0;
 }
 
 void CGridWorld::PrintValueFunc() 

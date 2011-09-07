@@ -9,6 +9,7 @@
 namespace tcl { namespace rll {
 
 /// @brief Help to select actions.
+/// @todo Use sorted vector.
 class CPolicy
 {
 public:

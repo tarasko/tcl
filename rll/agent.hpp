@@ -26,9 +26,36 @@ public:
     /// @brief Correct value function according update map.
     void update(const CUpdateList& i_list);
 
+    CStatePtr lastStateWhenWasActive() const;
+    void setLastStateWhenWasActive(const CStatePtr& state);
+    CActionPtr lastActionWhenWasActive() const;
+    void setLastActionWhenWasActive(const CActionPtr& action);
+
 private:
-    CVectorRlltPtr m_ptrPrevState; //!< Last agent state when it was active
     CValueFunctionPtr m_ptrFunc;   //!< Value function for agent
+
+    CStatePtr  m_state;
+    CActionPtr m_action;
 };
+
+inline CStatePtr CAgent::lastStateWhenWasActive() const
+{
+    return m_state;
+}
+
+inline void CAgent::setLastStateWhenWasActive(const CStatePtr& state)
+{
+    m_state = state;
+}
+
+inline CActionPtr CAgent::lastActionWhenWasActive() const
+{
+    return m_action;
+}
+
+inline void CAgent::setLastActionWhenWasActive(const CActionPtr& action)
+{
+    m_action = action;
+}
 
 }}

@@ -7,7 +7,7 @@
 
 namespace tcl { namespace rll {
 
-/// @brief Environment interfaces base.
+/// @brief Environment base class.
 /// 
 /// You must inherit one of CEnvState or CEnvAction and override virtuals.
 /// In constructor of your class you should set active agent to whatever you 
@@ -21,57 +21,57 @@ class CEnvBase
 public:
     CEnvBase();
 
-    /// @brief Set members to initial state.
-    void initEpisode();
-
-    /// @brief Assign reward for current agent and current state
-    /// When process o_ptrRewards already has size equals to o_ptrRewards and
-    /// every item initialized to 0.0
-    /// @return Must return true if we got to terminal state.
-    bool observeReward(double& o_reward) const;
-
-    /// @brief Return terminal rewards for each agents.
-    /// This method will be called after observeReward has returned true. Terminal reward.
-    CVectorDbl observeTerminalRewards() const;
-
-    /// @brief Set next active agent and return it index.
-    int selectNextAgent();
-    /// @}
-    
     // Agents accessors
     std::vector<CAgentPtr>& agents();
     const std::vector<CAgentPtr>& agents() const;
 
-	/// @brief Return current episode
+    /// @brief Method will call this when new episode begins.
+    void initEpisode();
+
+    /// @brief Return current active agent.
+    /// Usually active agent is switched inside of nextStep.
+    size_t activeAgent() const;
+
+    /// @brief Return current state.
+    CStatePtr currentState() const;
+
+    /// @brief Method will call this if it ready to do the next step.
+    /// Return true if environment successfully switched to new step.
+    /// (Environment can change active agent here for example).
+    /// Return false if we are already in terminal state. In this case method will
+    /// observe terminal reward, do last update and init new episode.
+    bool nextStep();
+
+    /// @brief Return terminal rewards for each agents.
+    CVectorDbl observeTerminalRewards() const;
+    
+	/// @brief Return current episode.
 	unsigned int episode() const;
 
-	/// @brief Return current step
+	/// @brief Return current step.
 	unsigned int step() const;
 
 protected:
-
-    /// @name Methods that should be overrided by user
+    /// @name Methods that should be overriden by user
     /// @{
-
-    /// @brief Set members to initial state.
-    /// Should set following members
-    /// - State
-    /// - Action(if required)
-    /// - m_activeAgent(if required. By default it is 0)
+    /// @brief Called when episode begins.
     virtual void initEpisodeImpl() = 0;
 
-    /// @brief Assign reward for each agent after we get to new state.
-    /// When process o_ptrRewards already has size equals to o_ptrRewards and
-    /// every item initialized to 0.0
-    /// @return Must return true if we got to terminal state.
-    virtual bool observeRewardImpl(double& o_reward) const = 0;
+    /// @brief Return current active agent.
+    virtual size_t activeAgentImpl() const = 0;
+
+    /// @brief Return current state.
+    virtual CStatePtr currentStateImpl() const = 0;
+
+    /// @brief Called when we ready to proceed with next step.
+    /// @return false if current step is terminal and method was unable to 
+    /// switch to next step.
+    virtual bool nextStepImpl() = 0;
 
     /// @brief Return terminal rewards for each agents.
-    /// This method will be called after observeReward has returned true. Terminal reward.
+    /// Terminal reward for last active agent is ignored, because it was
+    /// taken in account after last observeRewardImpl call
     virtual CVectorDbl observeTerminalRewardsImpl() const = 0;
-
-    /// @brief Set next active agent and return it index.
-    virtual int selectNextAgentImpl() = 0;
     /// @}
     
 private:
@@ -85,71 +85,26 @@ private:
 class CEnvState : public CEnvBase 
 {
 public:
-    typedef std::vector<CStatePtr> CPossibleStates;
+    /// @brief Get possible next states for active agent for current environment state.
+    virtual std::vector<CStatePtr> getPossibleNextStatesImpl() const = 0;
 
-    /// @brief Set current state.
-    void setCurrentState(const CStatePtr& state);
-
-    /// @brief Get current state.
-    CStatePtr currentState() const;
-
-    /// @brief Get previous state, return 0 if there is no previous state.
-    CStatePtr previousState() const;
-
-    /// @brief Get possible next states from current state
-    virtual void fillPossibilities(CPossibleStates& o_states) = 0;
-
-private:
-    CStatePtr m_ptrState;            //!< Current environment state
-    CStatePtr m_ptrPrevState;        //!< Previous environment state
+    /// @brief Set one of state returned from getPossibleNextStates as current and observe reward.
+    virtual double setNextStateObserveRewardImpl(const CStatePtr& state) = 0;
 };
 
 /// @brief Environment for state-action value function.
 class CEnvAction : public CEnvBase
 {
 public:
-    typedef std::vector<CActionPtr> CPossibleActions;
+    /// @brief Get possible actions for active agent for current environment state.
+    virtual std::vector<CActionPtr> getPossibleActionsImpl() const = 0;
 
-public:
-    CStatePtr currentState() const;
-    void setCurrentState(const CStatePtr& i_state);
-
-    CActionPtr currentAction() const;
-    void setCurrentAction(const CActionPtr& i_action);
-
-    CStatePtr previousState() const;
-    CActionPtr previousAction() const;
-
-public:
-    /// @brief Get next state and possible actions from next state
-    /// @return Next state according to m_ptrAction
-    virtual void fillPossibilities(CPossibleActions& o_actions) = 0;
-
-    /// @brief Return next state by previous state and performed action
-    virtual void doAction(const CActionPtr& i_ptrAction) = 0;
-
-private:
-    CStatePtr m_ptrState;
-    CActionPtr m_ptrAction;
-
-    CStatePtr m_ptrPrevState;
-    CActionPtr m_ptrPrevAction;
+    /// @brief Set one of state returned from getPossibleNextStates as current and observe reward.
+    virtual double doActionObserveRewardImpl(const CActionPtr& action) const = 0;
 };
 
 inline CEnvBase::CEnvBase() : m_episode(unsigned int(-1))
 {
-}
-
-inline void CEnvBase::initEpisode()
-{
-    ++m_episode;
-	m_step = unsigned int(-1);
-    initEpisodeImpl();
-}
-
-inline bool CEnvBase::observeReward(double& o_reward) const
-{
-    return observeRewardImpl(o_reward);
 }
 
 inline CVectorDbl CEnvBase::observeTerminalRewards() const 
@@ -157,12 +112,16 @@ inline CVectorDbl CEnvBase::observeTerminalRewards() const
     return observeTerminalRewardsImpl();
 }
 
-inline int CEnvBase::selectNextAgent()
+inline size_t CEnvBase::activeAgent() const
 {
-	++m_step;
-    return selectNextAgentImpl();
+    return activeAgentImpl();
 }
-    
+
+inline CStatePtr CEnvBase::currentState() const
+{
+    return currentStateImpl();
+}
+
 inline std::vector<CAgentPtr>& CEnvBase::agents()
 {
     return m_agents;
@@ -181,54 +140,6 @@ inline unsigned int CEnvBase::episode() const
 inline unsigned int CEnvBase::step() const
 {
 	return m_step;
-}
-
-inline void CEnvState::setCurrentState(const CStatePtr& state)
-{
-    m_ptrPrevState = m_ptrState;
-    m_ptrState = state;
-}
-
-inline CStatePtr CEnvState::currentState() const
-{
-    return m_ptrState;
-}
-
-inline CStatePtr CEnvState::previousState() const
-{
-    return m_ptrPrevState;
-}
-
-inline CStatePtr CEnvAction::currentState() const
-{
-    return m_ptrState;
-}
-
-inline void CEnvAction::setCurrentState(const CStatePtr& i_state)
-{
-    m_ptrPrevState = m_ptrState;
-    m_ptrState = i_state;
-}
-
-inline CActionPtr CEnvAction::currentAction() const
-{
-    return m_ptrAction;
-}
-
-inline void CEnvAction::setCurrentAction(const CActionPtr& i_action)
-{
-    m_ptrPrevAction = m_ptrAction;
-    m_ptrAction = i_action;
-}
-
-inline CStatePtr CEnvAction::previousState() const
-{
-    return m_ptrPrevState;
-}
-
-inline CActionPtr CEnvAction::previousAction() const
-{
-    return m_ptrPrevAction;
 }
 
 }}
