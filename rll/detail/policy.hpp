@@ -1,12 +1,13 @@
 #pragma once
 
-#include "config.hpp"
+#include "../config.hpp"
 
 #include <random>
 #include <map>
 #include <algorithm>
 
 namespace tcl { namespace rll {
+namespace detail {
 
 /// @brief Help to select actions.
 /// @todo Use sorted vector.
@@ -80,4 +81,5 @@ protected:
     std::mt19937 m_gen;        //!< Random number generator
 };
 
+}
 }}

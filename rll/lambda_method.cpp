@@ -80,7 +80,7 @@ void CLambdaTD::updateValueFunctionImpl(
         detail::translate(activeAgent->lastStateWhenWasActive(), CActionPtr(), activeAgentIdx);
 
     double V = activeAgent->getValue(ptrPrevState);
-    double newV = 0;
+    double newV = 0.0;
 
     if (newState)
     {

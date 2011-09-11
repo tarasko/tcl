@@ -33,6 +33,7 @@ DEFINE_EXCEPTION(CRLException)
 struct CConfig;
 class CState;
 class CAction;
+class CEnvBase;
 class CEnvState;
 class CEnvAction;
 class CAgent;

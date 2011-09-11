@@ -1,9 +1,7 @@
 #pragma once
 
 #include "rll_fwd.hpp"
-#include "policy.hpp"
-
-#include <map>
+#include "detail/policy.hpp"
 
 namespace tcl { namespace rll {
 
@@ -17,34 +15,33 @@ namespace tcl { namespace rll {
 class CMethodBase 
 {
 public:
-    CMethodBase(const CConfigPtr& i_ptrConfig) 
-        : m_ptrConfig(i_ptrConfig)
-        , m_policy(i_ptrConfig) 
-    {
-    }
+    CMethodBase(CEnvBase* pEnv, const CConfigPtr& ptrConfig);
+    virtual ~CMethodBase();
 
-    /// @brief Run training loop 
-    /// @param i_episodes - Number of episodes to train
-    void Run(unsigned int i_episodes);
+    /// @brief Run training loop.
+    /// @param episodes - Number of episodes to train
+    void run(unsigned int episodes);
+
+    unsigned int episode() const;
+    unsigned int step() const;
 
 protected:
-    /// @brief Process episode depend on method type
-    virtual void processEpisode(unsigned int i_episode) = 0;  
+    /// @brief Run episode single episode
+    virtual void runEpisode() = 0;  
 
-    CConfigPtr m_ptrConfig;  //!< Config information
-    CPolicy m_policy;        //!< Policy
+    CConfigPtr      m_ptrConfig;  //!< Config information
+    detail::CPolicy m_policy;     //!< Policy
+    CEnvBase*       m_pEnv;       //!< Environment
+
+    unsigned int    m_episode;    //!< Current episode
+    unsigned int    m_step;       //!< Current step in episode
 };
 
 /// @brief Base class for methods which operate only on states
 class CStateMethod : public CMethodBase 
 {
 public:
-    CStateMethod(CEnvState* i_pEnv, const CConfigPtr& i_ptrConfig) 
-        : CMethodBase(i_ptrConfig), m_pEnv(i_pEnv) 
-    {
-    }
-
-    typedef std::multimap<double, CStatePtr> CValueStateMap;
+    CStateMethod(CEnvState* pEnv, const CConfigPtr& ptrConfig);
 
 protected:
     /// @brief Update value function for specific agent with new reward
@@ -63,22 +60,19 @@ protected:
 
 private:
     /// @brief Process episode as states method.
-    void processEpisode(unsigned int i_episode);
-
-    CEnvState* m_pEnv;  //!< Environment
+    void runEpisode();
 };
 
 /// @brief Base class for methods which operate on state-action pairs
 class CActionMethod : public CMethodBase 
 {
 public:
-    CActionMethod(CEnvAction* i_pEnv, const CConfigPtr& i_ptrConfig) 
-        : CMethodBase(i_ptrConfig)
-        , m_pEnv(i_pEnv) 
-    {
-    }
+    CActionMethod(CEnvAction* i_pEnv, const CConfigPtr& i_ptrConfig);
 
-    typedef std::multimap<double, CActionPtr> CValueActionMap;
+    void run(unsigned int episodes);
+
+    using CMethodBase::episode;
+    using CMethodBase::step;
 
 protected:
     /// @brief Update value function for specific agent with new reward
@@ -86,9 +80,7 @@ protected:
 
 private:
     /// @brief Process episode as actions-states method.
-    virtual void processEpisode(unsigned int i_episode);
-
-    CEnvAction* m_pEnv;  //!< Environment
+    void runEpisode();
 };
 
 }}

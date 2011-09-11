@@ -1,38 +1,26 @@
 #include "environment.hpp"
-
-#include <algorithm>
+#include "method.hpp"
 
 namespace tcl { namespace rll {
 
-void CEnvBase::initEpisode()
+std::vector<CAgentPtr>& CEnvBase::agents()
 {
-    ++m_episode;
-	m_step = 0;
-    std::for_each(
-        m_agents.begin()
-      , m_agents.end()
-      , [](CAgentPtr& agent) -> void
-        { 
-            agent->setLastStateWhenWasActive(CStatePtr());
-            agent->setLastActionWhenWasActive(CActionPtr());
-        }
-      );
-
-    initEpisodeImpl();
-    m_agents[activeAgentImpl()]->setLastStateWhenWasActive(currentStateImpl());
+    return m_agents;
 }
 
-bool CEnvBase::nextStep()
+const std::vector<CAgentPtr>& CEnvBase::agents() const
 {
-    bool cont = nextStepImpl();
-    if (cont) 
-    {
-        if (!m_agents[activeAgentImpl()]->lastStateWhenWasActive()) 
-            m_agents[activeAgentImpl()]->setLastStateWhenWasActive(currentStateImpl());
+    return m_agents;
+}
 
-        ++m_step;
-    }
-    return cont;
+unsigned int CEnvBase::episode() const
+{
+    return m_method->episode();
+}
+
+unsigned int CEnvBase::step() const
+{
+    return m_method->step();
 }
 
 }}

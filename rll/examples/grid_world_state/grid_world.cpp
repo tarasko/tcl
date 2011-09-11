@@ -36,28 +36,23 @@ CGridWorld::CGridWorld(void)
     m_wind[9] = 0;
 }
 
-void CGridWorld::initEpisodeImpl() 
+void CGridWorld::initEpisode() 
 {
     m_state->SetValue("ROW", 3);
     m_state->SetValue("COLUMN", 0);
 }
 
-size_t CGridWorld::activeAgentImpl() const
+size_t CGridWorld::activeAgent() const
 {
     return 0;
 }
 
-CStatePtr CGridWorld::currentStateImpl() const
+CStatePtr CGridWorld::currentState() const
 {
     return m_state;
 }
 
-bool CGridWorld::nextStepImpl()
-{
-    return !isTerminalState(currentState());
-}
-
-std::vector<CStatePtr> CGridWorld::getPossibleNextStatesImpl() const
+std::vector<CStatePtr> CGridWorld::getPossibleNextStates() const
 {
     std::vector<CStatePtr> result;
 
@@ -105,13 +100,15 @@ std::vector<CStatePtr> CGridWorld::getPossibleNextStatesImpl() const
     return result;
 }
 
-double CGridWorld::setNextStateObserveRewardImpl(const CStatePtr& state)
+bool CGridWorld::setNextStateObserveReward(const CStatePtr& state, double& reward)
 {
     m_state = state;
-    return isTerminalState(currentState()) ? 1.0 : -1.0;
+    bool isTerminal = isTerminalState(state);
+    reward = isTerminal ? 1.0 : -1.0;
+    return !isTerminal;
 }
 
-CVectorDbl CGridWorld::observeTerminalRewardsImpl() const
+CVectorDbl CGridWorld::observeTerminalRewards() const
 {
     std::cout << "Episode number:" << episode() << "\t" <<
         "Episode takes: " << step() << std::endl;

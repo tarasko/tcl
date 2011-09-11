@@ -31,11 +31,16 @@ public:
     CActionPtr lastActionWhenWasActive() const;
     void setLastActionWhenWasActive(const CActionPtr& action);
 
+    void addReward(double reward);
+    double releaseReward();
+
 private:
     CValueFunctionPtr m_ptrFunc;   //!< Value function for agent
 
     CStatePtr  m_state;
     CActionPtr m_action;
+
+    double m_reward;
 };
 
 inline CStatePtr CAgent::lastStateWhenWasActive() const

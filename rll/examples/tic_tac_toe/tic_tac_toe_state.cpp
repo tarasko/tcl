@@ -21,11 +21,13 @@ private:
         return buf;
     }
 
-    virtual void initEpisodeImpl();
-    virtual int selectNextAgentImpl();
-    virtual void fillPossibilities(CPossibleStates& o_states);
-    virtual bool observeRewardImpl(double& o_reward) const;
-    virtual CVectorDbl observeTerminalRewardsImpl() const;
+	virtual void initEpisode();
+    virtual size_t activeAgent() const;
+    virtual CStatePtr currentState() const;
+	virtual CVectorDbl observeTerminalRewards() const;
+    virtual std::vector<CStatePtr> getPossibleNextStates() const;
+    virtual bool setNextStateObserveReward(const CStatePtr& state, double& reward);
+
 
     /// @param o_reward - Get reward for current state.
     /// @return true if game has finished.
@@ -33,23 +35,24 @@ private:
     void printState() const;
 
 private:
-    int m_activeAgentIdx;
+    size_t    m_activeAgentIdx;
+    CStatePtr m_state;
+    bool      m_finished;
     mutable CVectorDbl m_lastTerminalRewards;
 };
 
 CTicTacToeState::CTicTacToeState() 
 {
-    CStatePtr ptrState = make_shared<CState>();
-    ptrState->RegisterVariable("00");
-    ptrState->RegisterVariable("01");
-    ptrState->RegisterVariable("02");
-    ptrState->RegisterVariable("10");
-    ptrState->RegisterVariable("11");
-    ptrState->RegisterVariable("12");
-    ptrState->RegisterVariable("20");
-    ptrState->RegisterVariable("21");
-    ptrState->RegisterVariable("22");
-    setCurrentState(ptrState);
+    m_state = make_shared<CState>();
+    m_state->RegisterVariable("00");
+    m_state->RegisterVariable("01");
+    m_state->RegisterVariable("02");
+    m_state->RegisterVariable("10");
+    m_state->RegisterVariable("11");
+    m_state->RegisterVariable("12");
+    m_state->RegisterVariable("20");
+    m_state->RegisterVariable("21");
+    m_state->RegisterVariable("22");
 
     // Create value function and method
     CValueFunctionPtr ptrFunc = make_shared<CLookupTable>();
@@ -59,24 +62,36 @@ CTicTacToeState::CTicTacToeState()
     agents().push_back(OPlayer);
 }
 
-void CTicTacToeState::initEpisodeImpl() 
+void CTicTacToeState::initEpisode() 
 {
-    m_activeAgentIdx = 1;
+    m_activeAgentIdx = 0;
+    m_finished = 0;
     for (int x=0; x<3; ++x) 
     {
         for (int y=0; y<3; ++y) 
-            currentState()->SetValue(formatState(x, y), 0);
+            m_state->SetValue(formatState(x, y), 0);
     }
 }
 
-int CTicTacToeState::selectNextAgentImpl()
+size_t CTicTacToeState::activeAgent() const
 {
-    m_activeAgentIdx = m_activeAgentIdx == 0 ? 1 : 0;
     return m_activeAgentIdx;
 }
 
-void CTicTacToeState::fillPossibilities(CPossibleStates& o_states) 
+CStatePtr CTicTacToeState::currentState() const
 {
+    return m_state;
+}
+
+CVectorDbl CTicTacToeState::observeTerminalRewards() const
+{
+    return std::move(m_lastTerminalRewards);
+}
+
+std::vector<CStatePtr> CTicTacToeState::getPossibleNextStates() const
+{
+    std::vector<CStatePtr> result;
+
     // Run over all squares
     int squares[3][3];
     for (int x=0; x<3; ++x) 
@@ -85,40 +100,24 @@ void CTicTacToeState::fillPossibilities(CPossibleStates& o_states)
         {
             // Fill squares
             const char* dest = formatState(x, y);
-            squares[x][y] = currentState()->GetValue(dest);
+            squares[x][y] = m_state->GetValue(dest);
             if (0 == squares[x][y]) 
             {
                 // Make new state
-                CStatePtr ptrNewState = currentState()->Clone();
+                CStatePtr ptrNewState = m_state->Clone();
                 ptrNewState->SetValue(dest, m_activeAgentIdx == 0 ? 1 : 2);
-                o_states.push_back(ptrNewState);
+                result.push_back(ptrNewState);
             }
         }
     }
+
+    return result;
 }
 
-bool CTicTacToeState::observeRewardImpl(double& o_reward) const
+bool CTicTacToeState::setNextStateObserveReward(const CStatePtr& state, double& reward)
 {
-    if ((episode() % 100) == 0) 
-        printState();
+    m_state = state;
 
-    CVectorDbl rewards(2);
-    bool finished = analyzeState(rewards);
-    o_reward = rewards[m_activeAgentIdx];
-
-    if (finished) 
-        m_lastTerminalRewards = std::move(rewards);
-
-    return finished;
-}
-
-CVectorDbl CTicTacToeState::observeTerminalRewardsImpl() const
-{
-    return std::move(m_lastTerminalRewards);
-}
-
-bool CTicTacToeState::analyzeState(CVectorDbl& o_rewards) const
-{
     // 0-empty 1-X 2-O 
     int   squares[3][3];
     // true - if player that just has maked move has it own sign
@@ -132,7 +131,7 @@ bool CTicTacToeState::analyzeState(CVectorDbl& o_rewards) const
     for (int x=0; x<3; ++x) {
         for (int y=0; y<3; ++y) {
             // Fill squares
-            squares[x][y] = currentState()->GetValue(formatState(x, y));
+            squares[x][y] = m_state->GetValue(formatState(x, y));
             // Fill my
             my[x][y] = squares[x][y] == activePlayerSigns;
             // Update noEmptySquares
@@ -142,6 +141,8 @@ bool CTicTacToeState::analyzeState(CVectorDbl& o_rewards) const
 
     auto assignRewards = [](CVectorDbl& o_rewards, int i_whoWin) -> void
     {
+        o_rewards.resize(2);
+
         if (i_whoWin == 0) 
         {
             o_rewards[0] = 1.0;
@@ -160,8 +161,8 @@ bool CTicTacToeState::analyzeState(CVectorDbl& o_rewards) const
             squares[1][y] == squares[2][y] &&
             squares[0][y] == activePlayerSigns;
         if (lastMoveWin) {
-            assignRewards(o_rewards, m_activeAgentIdx);
-            return true;
+            assignRewards(m_lastTerminalRewards, m_activeAgentIdx);
+            return false;
         }
     }
 
@@ -175,8 +176,8 @@ bool CTicTacToeState::analyzeState(CVectorDbl& o_rewards) const
 
         if (lastMoveWin) 
         {
-            assignRewards(o_rewards, m_activeAgentIdx);
-            return true;
+            assignRewards(m_lastTerminalRewards, m_activeAgentIdx);
+            return false;
         }
     }
 
@@ -193,19 +194,30 @@ bool CTicTacToeState::analyzeState(CVectorDbl& o_rewards) const
 
     if (lastMoveWin) 
     {
-        assignRewards(o_rewards, m_activeAgentIdx);
-        return true;
+        assignRewards(m_lastTerminalRewards, m_activeAgentIdx);
+        return false;
     }
 
     // Ok now check for draw
     if (!hasEmptySquares) 
-        return true;
+    {
+        m_lastTerminalRewards.resize(2, 0.0);
+        return false;
+    }
 
-    return false;
+    // Switch active agent
+    printState();
+    m_activeAgentIdx ^= 1;
+    reward = 0.0;
+
+    return true;
 }
 
 void CTicTacToeState::printState() const
 {
+    if (episode() % 100) 
+        return;
+
     cout << "Episode: " << episode()
         << " Step: " <<  step() 
         << " Value: " 
@@ -216,7 +228,7 @@ void CTicTacToeState::printState() const
         for (int y=0; y<3; ++y) {
             const char* dest = formatState(x, y);
             // Fill squares
-            int sign = currentState()->GetValue(dest);
+            int sign = m_state->GetValue(dest);
             if (1 == sign) {
                 cout << "X";
             } else if (2 == sign) {
@@ -245,5 +257,5 @@ int main()
     CTicTacToeState game;
     CLambdaTD m(&game, ptrConfig);
 
-    m.Run(100000);
+    m.run(100000);
 }

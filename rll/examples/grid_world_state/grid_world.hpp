@@ -12,13 +12,12 @@ public:
 	void PrintValueFunc();
 
 private:
-	virtual void initEpisodeImpl();
-    virtual size_t activeAgentImpl() const;
-    virtual CStatePtr currentStateImpl() const;
-    virtual bool nextStepImpl();
-	virtual CVectorDbl observeTerminalRewardsImpl() const;
-    virtual std::vector<CStatePtr> getPossibleNextStatesImpl() const;
-    virtual double setNextStateObserveRewardImpl(const CStatePtr& state);
+	virtual void initEpisode();
+    virtual size_t activeAgent() const;
+    virtual CStatePtr currentState() const;
+	virtual CVectorDbl observeTerminalRewards() const;
+    virtual std::vector<CStatePtr> getPossibleNextStates() const;
+    virtual bool setNextStateObserveReward(const CStatePtr& state, double& reward);
 
 	static bool isTerminalState(CStatePtr i_ptrState);
 	static int applyRowBounds(int i_row);
