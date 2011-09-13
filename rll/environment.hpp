@@ -39,9 +39,6 @@ public:
 
     /// @brief Return current state.
     virtual CStatePtr currentState() const = 0;
-
-    /// @brief Return terminal rewards for each agents.
-    virtual CVectorDbl observeTerminalRewards() const = 0;
     /// @}
     
 private:

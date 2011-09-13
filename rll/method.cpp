@@ -153,25 +153,16 @@ void CStateMethod::runEpisode()
       , std::mem_fn(&CAgent::releaseReward)
       );
 
-    // Update value for active agent
-    // We assume here that terminal state value function is 0.
-    updateValueFunctionImpl(
-        pEnv->agents()[activeAgentIdx]
-      , activeAgentIdx
-      , CStatePtr()
-      , terminalRewards[activeAgentIdx]
-      );
-
-    //// Update value function for last state for each agent according to terminal rewards
-    //for(size_t agentIdx = 0; agentIdx < terminalRewards.size(); ++agentIdx) 
-    //{
-    //    updateValueFunctionImpl(
-    //        pEnv->agents()[agentIdx]
-    //      , agentIdx
-    //      , CStatePtr()
-    //      , terminalRewards[agentIdx]
-    //      );
-    //}
+    // Update value function for last state for each agent according to terminal rewards
+    for(size_t agentIdx = 0; agentIdx < terminalRewards.size(); ++agentIdx) 
+    {
+        updateValueFunctionImpl(
+            pEnv->agents()[agentIdx]
+          , agentIdx
+          , CStatePtr()
+          , terminalRewards[agentIdx]
+          );
+    }
 }
 
 CActionMethod::CActionMethod(CEnvAction* pEnv, const CConfigPtr& ptrConfig) 

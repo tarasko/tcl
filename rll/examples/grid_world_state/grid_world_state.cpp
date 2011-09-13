@@ -10,7 +10,7 @@ int main(int argc, char* argv[])
 {
     CConfigPtr ptrConfig(new CConfig);
     ptrConfig->m_enableLog = false;
-    ptrConfig->m_policy = CConfig::GREEDY;
+    ptrConfig->m_gamma = 1.0;
 
     CGridWorld gw;
     CLambdaTD m(&gw, ptrConfig);

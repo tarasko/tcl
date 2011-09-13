@@ -100,25 +100,28 @@ std::vector<CStatePtr> CGridWorld::getPossibleNextStates() const
     return result;
 }
 
-bool CGridWorld::setNextStateObserveReward(const CStatePtr& state, double& reward)
+bool CGridWorld::setNextStateAssignRewards(const CStatePtr& state)
 {
     m_state = state;
-    bool isTerminal = isTerminalState(state);
-    reward = isTerminal ? 1.0 : -1.0;
-    return !isTerminal;
-}
+    if (isTerminalState(state))
+    {
+        std::cout << "Episode number:" << episode() << "\t" <<
+            "Episode takes: " << step() << std::endl;
 
-CVectorDbl CGridWorld::observeTerminalRewards() const
-{
-    std::cout << "Episode number:" << episode() << "\t" <<
-        "Episode takes: " << step() << std::endl;
-
-    return CVectorDbl(1, 1.0);
+        agents()[0]->addReward(1.0);
+        return false;
+    }
+    else
+    {
+        agents()[0]->addReward(-1.0);
+        return true;
+    }
 }
 
 bool CGridWorld::isTerminalState(CStatePtr i_ptrState) 
 {
-    return i_ptrState->GetValue("ROW") == 3 && 
+    return 
+        i_ptrState->GetValue("ROW") == 3 && 
         i_ptrState->GetValue("COLUMN") == 7;
 }
 

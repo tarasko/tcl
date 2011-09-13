@@ -24,9 +24,8 @@ private:
 	virtual void initEpisode();
     virtual size_t activeAgent() const;
     virtual CStatePtr currentState() const;
-	virtual CVectorDbl observeTerminalRewards() const;
     virtual std::vector<CStatePtr> getPossibleNextStates() const;
-    virtual bool setNextStateObserveReward(const CStatePtr& state, double& reward);
+    virtual bool setNextStateAssignRewards(const CStatePtr& state);
 
 
     /// @param o_reward - Get reward for current state.
@@ -37,8 +36,6 @@ private:
 private:
     size_t    m_activeAgentIdx;
     CStatePtr m_state;
-    bool      m_finished;
-    mutable CVectorDbl m_lastTerminalRewards;
 };
 
 CTicTacToeState::CTicTacToeState() 
@@ -65,7 +62,6 @@ CTicTacToeState::CTicTacToeState()
 void CTicTacToeState::initEpisode() 
 {
     m_activeAgentIdx = 0;
-    m_finished = 0;
     for (int x=0; x<3; ++x) 
     {
         for (int y=0; y<3; ++y) 
@@ -81,11 +77,6 @@ size_t CTicTacToeState::activeAgent() const
 CStatePtr CTicTacToeState::currentState() const
 {
     return m_state;
-}
-
-CVectorDbl CTicTacToeState::observeTerminalRewards() const
-{
-    return std::move(m_lastTerminalRewards);
 }
 
 std::vector<CStatePtr> CTicTacToeState::getPossibleNextStates() const
@@ -114,7 +105,7 @@ std::vector<CStatePtr> CTicTacToeState::getPossibleNextStates() const
     return result;
 }
 
-bool CTicTacToeState::setNextStateObserveReward(const CStatePtr& state, double& reward)
+bool CTicTacToeState::setNextStateAssignRewards(const CStatePtr& state)
 {
     m_state = state;
 
@@ -139,29 +130,14 @@ bool CTicTacToeState::setNextStateObserveReward(const CStatePtr& state, double& 
         }
     }
 
-    auto assignRewards = [](CVectorDbl& o_rewards, int i_whoWin) -> void
-    {
-        o_rewards.resize(2);
-
-        if (i_whoWin == 0) 
-        {
-            o_rewards[0] = 1.0;
-            o_rewards[1] = -1.0;
-        } 
-        else 
-        {
-            o_rewards[1] = 1.0;
-            o_rewards[0] = -1.0;
-        }
-    };
-
     // Check horizontal lines
     for (int y=0; y<3; ++y) {
         bool lastMoveWin = squares[0][y] == squares[1][y] && 
             squares[1][y] == squares[2][y] &&
             squares[0][y] == activePlayerSigns;
         if (lastMoveWin) {
-            assignRewards(m_lastTerminalRewards, m_activeAgentIdx);
+            agents()[m_activeAgentIdx]->addReward(1.0);
+            agents()[m_activeAgentIdx ^ 1]->addReward(-1.0);
             return false;
         }
     }
@@ -176,7 +152,8 @@ bool CTicTacToeState::setNextStateObserveReward(const CStatePtr& state, double& 
 
         if (lastMoveWin) 
         {
-            assignRewards(m_lastTerminalRewards, m_activeAgentIdx);
+            agents()[m_activeAgentIdx]->addReward(1.0);
+            agents()[m_activeAgentIdx ^ 1]->addReward(-1.0);
             return false;
         }
     }
@@ -194,21 +171,18 @@ bool CTicTacToeState::setNextStateObserveReward(const CStatePtr& state, double& 
 
     if (lastMoveWin) 
     {
-        assignRewards(m_lastTerminalRewards, m_activeAgentIdx);
+        agents()[m_activeAgentIdx]->addReward(1.0);
+        agents()[m_activeAgentIdx ^ 1]->addReward(-1.0);
         return false;
     }
 
     // Ok now check for draw
     if (!hasEmptySquares) 
-    {
-        m_lastTerminalRewards.resize(2, 0.0);
         return false;
-    }
 
     // Switch active agent
     printState();
     m_activeAgentIdx ^= 1;
-    reward = 0.0;
 
     return true;
 }
@@ -253,6 +227,7 @@ int main()
     ptrConfig->m_hidden = 8;
     ptrConfig->m_vfMin = -1.0;
     ptrConfig->m_vfMax = 1.0;
+    ptrConfig->m_policy = CConfig::EPSILON_GREEDY;
 
     CTicTacToeState game;
     CLambdaTD m(&game, ptrConfig);
