@@ -14,67 +14,71 @@ namespace detail {
 class CPolicy
 {
 public:
-    CPolicy(CConfigPtr i_ptrConfig) : m_ptrConfig(i_ptrConfig) {}
-
     DEFINE_EXCEPTION(CPolicyException)
+
+    CPolicy(CConfigPtr ptrConfig) : m_ptrConfig(ptrConfig) {}
 
     /// @brief Select element from map according to selected policy.
     /// T - should be map with key type as double
     template<class T>
-    typename T::const_iterator Select(const T& i_variants)
+    const std::pair<double, T>& select(const std::vector<std::pair<double, T> >& sortedVariants)
     {
-        if (i_variants.empty()) {
+        if (sortedVariants.empty())
             throw CPolicyException("Cannot select action from empty set");
-        }
-        if (1 == i_variants.size()) {
-            return i_variants.begin();
-        }
-        switch (m_ptrConfig->m_policy) {
-            case CConfig::GREEDY: return runGreedy(i_variants);
-            case CConfig::EPSILON_GREEDY: return runEgreedy(i_variants);
-            default: return runEgreedy(i_variants);
+
+        if (1 == sortedVariants.size())
+            return sortedVariants.back();
+
+        switch (m_ptrConfig->m_policy)
+        {
+            case CConfig::GREEDY: return runGreedy(sortedVariants);
+            case CConfig::EPSILON_GREEDY: return runEGreedy(sortedVariants);
+            default: return runEGreedy(sortedVariants);
         }
     }
 
-protected:
+private:
     /// @brief Use greedy policy to determine next action.
     template<class T>
-    typename T::const_iterator runGreedy(const T& i_variants)
+    const std::pair<double, T>& runGreedy(const std::vector<std::pair<double, T> >& sortedVariants)
     {
-        // Determine first greedy action (We can have many greedy actions)
-        typename T::const_iterator iBegin = i_variants.lower_bound((--i_variants.end())->first);
-        typename T::size_type num = std::distance(iBegin, i_variants.end());
-
-        std::uniform_int_distribution<> int_dist(0, static_cast<int>(num) - 1);
-        std::advance(iBegin, int_dist(m_gen));
-
-        return iBegin;
+        return sortedVariants.back();                
     }
 
     /// @brief Use e-greedy policy to determine next action.
     template<class T>
-    typename T::const_iterator runEgreedy(const T& i_variants)
+    const std::pair<double, T>& runEGreedy(const std::vector<std::pair<double, T> >& sortedVariants)
     {
+        typedef const std::pair<double, T>& const_ref;
+
         std::uniform_real_distribution<> real_dist(0.0, 1.0);
 
         if (m_ptrConfig->m_epsilon >= real_dist(m_gen)) {
             // Make random move
             // Determine range of non-greedy actions and number of elements in it
-            typename T::const_iterator iBegin = i_variants.begin();
-            typename T::const_iterator iEnd = i_variants.lower_bound((--i_variants.end())->first);
-            typename T::size_type num = std::distance(iBegin, iEnd);
+            auto lb = std::lower_bound(
+                sortedVariants.begin()
+              , sortedVariants.end()
+              , sortedVariants.back()
+              , [](const_ref r1, const_ref r2) -> bool
+                {
+                    return r1.first < r2.first;
+                }
+              );
+
+            size_t num = lb - sortedVariants.begin();
+
             // Check if we have non greedy actions
             if (!num) {
-                return runGreedy(i_variants);
+                return runGreedy(sortedVariants);
             }
+
             // Select non-greedy action
             std::uniform_int_distribution<> int_dist(0, static_cast<int>(num) - 1);
-            std::advance(iBegin, int_dist(m_gen));
-
-            return iBegin;
-        } else {
-            return runGreedy(i_variants);
-        }
+            return sortedVariants[int_dist(m_gen)];
+        } 
+        else 
+            return runGreedy(sortedVariants);
     }
 
     CConfigPtr   m_ptrConfig;  //!< Determine type of policy and policy constants

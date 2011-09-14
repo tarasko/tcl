@@ -72,7 +72,7 @@ void CLambdaTD::prepareUpdates(
 void CLambdaTD::updateValueFunctionImpl(
     const CAgentPtr& activeAgent
   , int activeAgentIdx
-  , const CStatePtr& newState 
+  , const std::pair<double, CStatePtr>& newStateWithValue
   , double reward
   )
 {
@@ -80,13 +80,7 @@ void CLambdaTD::updateValueFunctionImpl(
         detail::translate(activeAgent->lastStateWhenWasActive(), CActionPtr(), activeAgentIdx);
 
     double V = activeAgent->getValue(ptrPrevState);
-    double newV = 0.0;
-
-    if (newState)
-    {
-        CVectorRlltPtr ptrState = detail::translate(newState, CActionPtr(), activeAgentIdx);
-        newV = activeAgent->getValue(ptrState);
-    }
+    double newV = newStateWithValue.first;
 
     CTraceMap& agentTraces = m_traces[activeAgentIdx];
     CAgent::CUpdateList updates;

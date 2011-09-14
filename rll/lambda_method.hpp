@@ -39,7 +39,7 @@ private:
     void updateValueFunctionImpl(
         const CAgentPtr& activeAgent
       , int activeAgentIdx
-      , const CStatePtr& newState 
+      , const std::pair<double, CStatePtr>& newStateWithValue
       , double reward
       );
     /// @}

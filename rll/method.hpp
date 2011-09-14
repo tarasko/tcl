@@ -54,13 +54,17 @@ protected:
     virtual void updateValueFunctionImpl(
         const CAgentPtr& activeAgent
       , int activeAgentIdx
-      , const CStatePtr& newState 
+      , const std::pair<double, CStatePtr>& newStateWithValue
       , double reward
       ) = 0;
 
 private:
+    typedef std::vector<std::pair<double, CStatePtr> > CValueStateMap;
+
     /// @brief Process episode as states method.
     void runEpisode();
+
+    CValueStateMap m_variants;
 };
 
 /// @brief Base class for methods which operate on state-action pairs
@@ -76,11 +80,22 @@ public:
 
 protected:
     /// @brief Update value function for specific agent with new reward
-    virtual void updateValueFunctionImpl(int i_agentIndex, double i_reward) = 0;
+    virtual void updateValueFunctionImpl(
+        const CAgentPtr& activeAgent
+      , int activeAgentIdx
+      , const CStatePtr& newState 
+      , const std::pair<double, CActionPtr>& policySelection
+      , const std::pair<double, CActionPtr>& greedySelection
+      , double reward
+      ) = 0;
 
 private:
+    typedef std::vector<std::pair<double, CActionPtr> > CValueActionMap;
+
     /// @brief Process episode as actions-states method.
     void runEpisode();
+
+    CValueActionMap m_variants;
 };
 
 }}

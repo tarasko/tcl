@@ -13,6 +13,8 @@ CGridWorld::CGridWorld(void)
     // Create config
     CConfigPtr ptrConfig(new CConfig);
     ptrConfig->m_enableLog = false;
+    ptrConfig->m_vfMin = -1000.0;
+    ptrConfig->m_vfMax = 2.0;
 
     // Create state
     m_state = make_shared<CState>();
@@ -20,7 +22,7 @@ CGridWorld::CGridWorld(void)
     m_state->RegisterVariable("COLUMN");
 
     // Create value function and agent
-    CValueFunctionPtr ptrFunc(new CLookupTable);
+    CValueFunctionPtr ptrFunc = make_shared<CLookupTable>();
     agents().push_back(make_shared<CAgent>(ptrFunc));
 
     // Init wind

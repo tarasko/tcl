@@ -16,25 +16,17 @@ namespace tcl { namespace rll {
 class CNeuronalNetwork::CFannWrapper 
 {
 public:
-    CFannWrapper(int i_input, int i_hidden) 
-    {
-        m_pFann = fann_create_standard(3, i_input, i_hidden, 1);
-        assert(m_pFann);
-        fann_set_training_algorithm(m_pFann, FANN_TRAIN_INCREMENTAL);
-        fann_set_activation_function_output(m_pFann, FANN_SIGMOID_SYMMETRIC);
-        // By default value function lays in range [-1; 1]
-        m_center = 0.0;
-        m_scale = 1.0;
-    }
     CFannWrapper(int i_input, CConfigPtr i_ptrConfig) 
     {
         m_pFann = fann_create_standard(3, i_input, i_ptrConfig->m_hidden, 1);
         assert(m_pFann);
         fann_set_training_algorithm(m_pFann, FANN_TRAIN_INCREMENTAL);
-        fann_set_activation_function_output(m_pFann, FANN_SIGMOID_SYMMETRIC);
+        fann_set_activation_function_output(m_pFann, FANN_LINEAR);
         // Calculate center and scale
-        m_center = (i_ptrConfig->m_vfMax + i_ptrConfig->m_vfMin) / 2;
-        m_scale = 1 / (m_center - i_ptrConfig->m_vfMin);
+        m_min = i_ptrConfig->m_vfMin;
+        m_max = i_ptrConfig->m_vfMax;
+        m_center = (m_max + m_min) / 2;
+        m_scale = 1 / (m_center - m_min);
     }
 
     ~CFannWrapper() 
@@ -55,9 +47,10 @@ public:
         for (CUpdateList::size_type i=0; i<i_list.size(); ++i) {
             // Copy first member
             std::copy(
-                i_list[i].first->begin(),
-                i_list[i].first->end(), 
-                back_inserter(intData[i].first));
+                i_list[i].first->begin()
+              , i_list[i].first->end()
+              , back_inserter(intData[i].first)
+              );
             // Copy second member and make scalling
             intData[i].second = scaleIn(static_cast<fann_type>(i_list[i].second));
         }
@@ -94,18 +87,26 @@ public:
 
 private:
     /// @brief Use center and scale to make outputs for training set.
-    fann_type scaleIn(fann_type i_val) {
-        return (i_val - m_center) * m_scale;
+    fann_type scaleIn(fann_type i_val) 
+    {
+        return i_val;
+        //i_val = max(i_val, m_min);
+        //i_val = min(i_val, m_max);
+        //return (i_val - m_center) * m_scale;
     }
 
     /// @brief Use center and scale to make val func from network output.
-    fann_type scaleOut(fann_type i_val) {
-        return i_val / m_scale + m_center;
+    fann_type scaleOut(fann_type i_val) 
+    {
+        return i_val;
+        //return i_val / m_scale + m_center;
     }
 
     fann*  m_pFann;  //!< FANN neuronal network
     double m_center; //!< Defines the center beetwen min and max values
     double m_scale;  //!< Defines the scale rate for output values
+    double m_min;    //!< Defines minimum possible output value
+    double m_max;    //!< Defines maximum possible output value
 };
 
 CNeuronalNetwork::CNeuronalNetwork(const CConfigPtr& i_ptrConfig) 

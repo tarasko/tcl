@@ -64,11 +64,15 @@ public:
 class CEnvAction : public CEnvBase
 {
 public:
+    /// @brief Get initial action.
+    virtual CActionPtr getInitialAction() const = 0;
+
     /// @brief Get possible actions for active agent for current environment state.
     virtual std::vector<CActionPtr> getPossibleActions() const = 0;
 
-    /// @brief Set one of state returned from getPossibleNextStates as current and observe reward.
-    virtual double doActionObserveReward(const CActionPtr& action) const = 0;
+    /// @brief Active agent should take current action and recieve reward.
+    /// @return True if method should continue with next step, false if we got to terminal state.
+    virtual bool doActionAssignRewards(const CActionPtr action) = 0;
 };
 
 }}

@@ -15,7 +15,7 @@ int main(int argc, char* argv[])
     CGridWorld gw;
     CLambdaTD m(&gw, ptrConfig);
 
-    m.run(2000);
+    m.run(3000);
     gw.PrintValueFunc();
     return 0;
 }
