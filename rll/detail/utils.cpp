@@ -13,7 +13,7 @@ CVectorRlltPtr translate(
     CVectorRlltPtr ptrRet = i_ptrState->GetData();
 
     if (i_ptrAction) {
-        ptrRet->push_back(i_ptrAction->GetData());
+        ptrRet->push_back(i_ptrAction->getData());
     }
     ptrRet->push_back(i_agent);
     return ptrRet;    

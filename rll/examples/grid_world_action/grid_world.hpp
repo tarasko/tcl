@@ -17,7 +17,7 @@ public:
         CGridWorldAction(int i_x, int i_y, int i_id) : m_x(i_x), m_y(i_y), m_id(i_id) 
         {}
 
-        virtual int GetData() const 
+        virtual int getData() const 
         {
             return m_id;
         }

@@ -8,7 +8,7 @@ namespace tcl { namespace rll {
 class CAction 
 {
 public:
-    virtual rll_type GetData() const = 0;
+    virtual rll_type getData() const = 0;
 };
 
 }}
