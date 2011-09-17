@@ -3,85 +3,86 @@
 #include <tcl/rll/lookup_table.hpp>
 
 #include <map>
+#include <functional>
+#include <iterator>
 #include <fstream>
 #include <iostream>
 
 using namespace tcl::rll;
 using namespace std;
 
-CGridWorld::CGridWorld(void) {
-  // Create state
-  m_ptrState.reset(new CState());
-  m_ptrState->RegisterVariable("ROW");
-  m_ptrState->RegisterVariable("COLUMN");
+CGridWorld::CGridWorld(void) 
+{
+    // Create state
+    m_state = make_shared<CState>();
+    m_state->RegisterVariable("ROW");
+    m_state->RegisterVariable("COLUMN");
 
-  // Create value function and method
-  CValueFunctionPtr ptrFunc(new CLookupTable);
-  CAgentPtr ptrAgent(new CAgent(ptrFunc));
-  m_agents.push_back(ptrAgent);
+    // Create value function and agent
+    CValueFunctionPtr ptrFunc = make_shared<CLookupTable>();
+    agents().push_back(make_shared<CAgent>(ptrFunc));
 
-  // Init wind
-  m_wind[0] = 0;
-  m_wind[1] = 0;
-  m_wind[2] = 0;
-  m_wind[3] = 1;
-  m_wind[4] = 1;
-  m_wind[5] = 1;
-  m_wind[6] = 2;
-  m_wind[7] = 2;
-  m_wind[8] = 1;
-  m_wind[9] = 0;
+    // Init wind
+    m_wind[0] = 0;
+    m_wind[1] = 0;
+    m_wind[2] = 0;
+    m_wind[3] = 1;
+    m_wind[4] = 1;
+    m_wind[5] = 1;
+    m_wind[6] = 2;
+    m_wind[7] = 2;
+    m_wind[8] = 1;
+    m_wind[9] = 0;
 
-  // Init actions
-  m_actions.push_back(std::make_shared<CGridWorldAction>(-1, 0, 0));
-  m_actions.push_back(std::make_shared<CGridWorldAction>(1, 0, 1));
-  m_actions.push_back(std::make_shared<CGridWorldAction>(0, -1, 2));
-  m_actions.push_back(std::make_shared<CGridWorldAction>(0, 1, 3));
+    // Init actions
+    m_actions.push_back(std::make_shared<CGridWorldAction>(-1, 0, 0));
+    m_actions.push_back(std::make_shared<CGridWorldAction>(1, 0, 1));
+    m_actions.push_back(std::make_shared<CGridWorldAction>(0, -1, 2));
+    m_actions.push_back(std::make_shared<CGridWorldAction>(0, 1, 3));
 }
 
-void CGridWorld::initEpisode() {
-  m_ptrState->SetValue("ROW", 3);
-  m_ptrState->SetValue("COLUMN", 0);
+void CGridWorld::initEpisode() 
+{
+    m_state->SetValue("ROW", 3);
+    m_state->SetValue("COLUMN", 0);
 }
 
-bool CGridWorld::isEpisodeFinished() {
-  static int sum = 0;
-  if (isTerminalState(m_ptrState)) {
-/*    sum += m_step + 1;
-    if ((m_episode + 1) % 10 == 0) {
-      double avg = sum / 10.0;
-      std::cout << m_episode + 1 << "\t" << avg << std::endl;
-      sum = 0;
+size_t CGridWorld::activeAgent() const
+{
+    return 0;
+}
+
+CStatePtr CGridWorld::currentState() const
+{
+    return m_state;
+}
+
+std::vector<tcl::rll::CActionPtr> CGridWorld::getPossibleActions() const
+{
+    std::vector<tcl::rll::CActionPtr> res;
+    std::copy_if(m_actions.begin(), m_actions.end(), back_inserter(res), 
+        bind(&CGridWorldAction::IsPossibleInState, placeholders::_1, m_state, cref(m_wind)));
+
+    return res;
+}
+
+bool CGridWorld::doActionAssignRewards(const tcl::rll::CActionPtr& action)
+{
+    static_pointer_cast<CGridWorldAction>(action)->ChangeState(m_state, m_wind);
+
+    bool finished = m_state->GetValue("ROW") == 3 && m_state->GetValue("COLUMN") == 7;
+
+    if (finished)
+    {
+        agents()[0]->addReward(1.0);
+        std::cout 
+            << "Episode number:" << episode() << "\t" 
+            << "Episode takes: " << step() << std::endl;
     }
-*/
-    
-    std::cout << "Episode number:" << m_episode + 1 << "\t" <<
-      "Episode takes: " << m_step + 1 << std::endl;
-    return true;
-  };
-  return false;
-}
+    else
+        agents()[0]->addReward(-1.0);
 
-void CGridWorld::fillPossibilities(CPossibleActions& o_actions) {
-  o_actions.assign(m_actions.begin(), m_actions.end());
-}
-
-CStatePtr CGridWorld::getNextState(CStatePtr i_ptrState, CActionPtr i_ptrAction) {
-  CStatePtr ptrNewState = i_ptrState->Clone();
-  static_pointer_cast<CGridWorldAction>(i_ptrAction)->ChangeState(ptrNewState, m_wind);
-  return ptrNewState;
-}
-
-void CGridWorld::observeRewards(CVectorDbl& o_rewards) {
-  // Trace state
-//  std::cout << "(" << any_cast<int>(i->second->GetValue("ROW")) << "," <<
-//    any_cast<int>(i->second->GetValue("COLUMN")) << ")\n";
-  o_rewards[0] = isTerminalState(m_ptrState) ? 1.0 : -1.0;
-}
-
-bool CGridWorld::isTerminalState(CStatePtr i_ptrState) {
-  return i_ptrState->GetValue("ROW") == 3 && 
-         i_ptrState->GetValue("COLUMN") == 7;
+    return !finished;
 }
 
 void CGridWorld::PrintValueFunc() {
@@ -97,18 +98,4 @@ void CGridWorld::PrintValueFunc() {
     fout << std::endl;
   }
 */
-}
-
-int CGridWorld::applyRowBounds(int i_row) 
-{
-    i_row = i_row > 6 ? 6 : i_row;
-    i_row = i_row < 0 ? 0 : i_row;
-    return i_row;
-}
-
-int CGridWorld::applyColBounds(int i_col) 
-{
-    i_col = i_col > 9 ? 9 : i_col;
-    i_col = i_col < 0 ? 0 : i_col;
-    return i_col;
 }

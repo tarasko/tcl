@@ -8,13 +8,16 @@
 
 using namespace tcl::rll;
 
-int main(int argc, char* argv[]) {
-  CConfigPtr ptrConfig(new CConfig);
-  ptrConfig->m_enableLog = false;
+int main(int argc, char* argv[]) 
+{
+    CConfigPtr ptrConfig(new CConfig);
+    ptrConfig->m_enableLog = false;
+    ptrConfig->m_gamma = 1.0;
+    ptrConfig->m_accumulating = false;
 
-  CGridWorld gw;
-  CLambdaWatkins m(&gw, ptrConfig);
+    CGridWorld gw;
+    CLambdaSarsa m(&gw, ptrConfig);
 
-  m.Run(2000);
-	return 0;
+    m.run(2000);
+    return 0;
 }

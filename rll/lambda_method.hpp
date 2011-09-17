@@ -10,17 +10,24 @@
 
 namespace tcl { namespace rll {
 
-/// @file Unified view for MC and TD methods.
-/// Use eligibility traces.
-/// Maintain distinct traces for every agent in system.
-
-/// @brief On-policy TD(lambda) method for state value function.
-/// Algorithm described in
-/// http://webdocs.cs.ualberta.ca/~sutton/book/ebook/node75.html
-class CLambdaTD : public CStateMethod 
+template<typename Base>
+class COnPolicyLambdaUpdater : public Base
 {
 public:
-    CLambdaTD(CEnvState* i_pEnv, CConfigPtr i_ptrConfig);
+    template<typename EnvType> 
+    COnPolicyLambdaUpdater(EnvType* env, const CConfigPtr& config)
+        : Base(env, config)
+        , m_traces(env->agents().size())
+    {
+    }
+
+    void updateValueFunctionHelper(
+        const CAgentPtr& agent
+      , size_t agentIdx
+      , const CVectorRlltPtr& oldState
+      , double newStateValue
+      , double reward
+      );
 
 private:
     typedef std::unordered_map<
@@ -31,6 +38,25 @@ private:
       > CTraceMap;
 
     typedef std::vector<CTraceMap> CTraces;
+
+    CTraces m_traces;
+};
+
+class COffPolicyLambdaUpdater
+{
+};
+
+/// @file Unified view for MC and TD methods.
+/// Use eligibility traces.
+/// Maintain distinct traces for every agent in system.
+
+/// @brief On-policy TD(lambda) method for state value function.
+/// Algorithm described in
+/// http://webdocs.cs.ualberta.ca/~sutton/book/ebook/node75.html
+class CLambdaTD : public COnPolicyLambdaUpdater<CStateMethod>
+{
+public:
+    CLambdaTD(CEnvState* env, const CConfigPtr& config);
 
 private:
 	/// @name CStateMethod implementation
@@ -43,36 +69,25 @@ private:
       , double reward
       );
     /// @}
-
-    void prepareUpdates(
-        const CAgentPtr& i_ptrAgent
-      , CTraceMap& io_agentTraces
-      , const CVectorRlltPtr& i_stateForUpdate
-      , double i_stateValue
-      , double i_nextStateValue
-      , double i_reward
-      , CAgent::CUpdateList& o_updateList
-      );
-
-private:
-    CTraces m_traces;       //!< Eligibility trace for each agent
-    CConfigPtr m_ptrConfig;
 };
 
 /// @brief On-policy TD(lambda) method for state-action value function.
 /// Algorithm described in
 /// http://webdocs.cs.ualberta.ca/~sutton/book/ebook/node64.html
-class CLambdaSarsa : public CActionMethod 
+class CLambdaSarsa : public COnPolicyLambdaUpdater<CActionMethod> 
 {
 public:
-    CLambdaSarsa(CEnvAction* i_pEnv, CConfigPtr i_ptrConfig) 
-        : CActionMethod(i_pEnv, i_ptrConfig) 
-    {
-    }
+    CLambdaSarsa(CEnvAction* pEnv, const CConfigPtr& ptrConfig);
 
 protected:
     /// @brief Update value function for specific agent with new reward
-    void updateValueFunctionImpl(int i_agentIndex, double i_reward);
+    void updateValueFunctionImpl(
+        const CAgentPtr& activeAgent
+      , int activeAgentIdx
+      , const std::pair<double, CActionPtr>& policySelection
+      , const std::pair<double, CActionPtr>& greedySelection
+      , double reward
+      );
 };
 
 /// @brief Off-policy TD(lambda) method for state-action value function.

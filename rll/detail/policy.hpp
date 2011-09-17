@@ -16,7 +16,7 @@ class CPolicy
 public:
     DEFINE_EXCEPTION(CPolicyException)
 
-    CPolicy(CConfigPtr ptrConfig) : m_ptrConfig(ptrConfig) {}
+    CPolicy(const CConfigPtr& ptrConfig) : m_ptrConfig(ptrConfig) {}
 
     /// @brief Select element from map according to selected policy.
     /// T - should be map with key type as double
@@ -38,11 +38,40 @@ public:
     }
 
 private:
+    template<class T>
+    const std::pair<double, T>& runGreedy(
+        const std::vector<std::pair<double, T> >& sortedVariants
+      )
+    {
+        typedef const std::pair<double, T>& const_ref;
+        typedef std::vector<std::pair<double, T> > variants_vector;
+
+        typename variants_vector::const_iterator greedyLowerBoundHint = std::lower_bound(
+            sortedVariants.begin()
+          , sortedVariants.end()
+          , sortedVariants.back()
+          , [](const_ref r1, const_ref r2) -> bool
+            {
+                return r1.first < r2.first;
+            }
+          );
+
+        return runGreedyWithHint(sortedVariants, greedyLowerBoundHint);
+    }
+
     /// @brief Use greedy policy to determine next action.
     template<class T>
-    const std::pair<double, T>& runGreedy(const std::vector<std::pair<double, T> >& sortedVariants)
+    const std::pair<double, T>& runGreedyWithHint(
+        const std::vector<std::pair<double, T> >& sortedVariants
+      , typename std::vector<std::pair<double, T> >::const_iterator greedyLowerBoundHint
+      )
     {
-        return sortedVariants.back();                
+        std::uniform_int_distribution<> int_dist(
+            greedyLowerBoundHint - sortedVariants.begin()
+          , sortedVariants.size() - 1
+          );
+
+        return sortedVariants[int_dist(m_gen)];
     }
 
     /// @brief Use e-greedy policy to determine next action.
@@ -70,7 +99,7 @@ private:
 
             // Check if we have non greedy actions
             if (!num) {
-                return runGreedy(sortedVariants);
+                return runGreedyWithHint(sortedVariants, lb);
             }
 
             // Select non-greedy action

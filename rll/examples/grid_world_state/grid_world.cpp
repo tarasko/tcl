@@ -10,12 +10,6 @@ using namespace std;
 
 CGridWorld::CGridWorld(void) 
 {
-    // Create config
-    CConfigPtr ptrConfig(new CConfig);
-    ptrConfig->m_enableLog = false;
-    ptrConfig->m_vfMin = -1000.0;
-    ptrConfig->m_vfMax = 2.0;
-
     // Create state
     m_state = make_shared<CState>();
     m_state->RegisterVariable("ROW");

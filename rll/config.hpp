@@ -19,15 +19,14 @@ struct CConfig
         m_alpha(0.05),
         m_lambda(0.5),
         m_gamma(1.0),
-        m_accumulating(true),
+        m_accumulating(false),
         m_policy(EPSILON_GREEDY),
         m_epsilon(0.05),
         m_hidden(10),
         m_vfMin(-1.0),
         m_vfMax(1.0),
         m_etEpsilon(0.001),
-        m_enableLog(false),
-        m_rewardTerminal(true) 
+        m_enableLog(false)
     {
     }
 
@@ -59,22 +58,6 @@ struct CConfig
     double m_etEpsilon;
     /** @brief Enable or disable log */
     bool m_enableLog;
-    /** @brief Reward terminal state with previous occured reward?
-        When the episode is over we know significant result not for terminal state
-        but only for state before terminal. So the terminal state always has value 
-        0. And it`s actually correct because this is state method niether 
-        state-action. So when we got state before last we cannot make next move 
-        based only value prediction. For example for wining state we have always 
-        zero prediction. This is bad. The worst thing is that there is another 
-        special case. Suppose we use some time stamp as condition of episode end (not
-        some special terminal state). Here last state can be equal to every state 
-        that occurs before.
-        Solution that I have is partial. Make prediction for every terminal state 
-        equal to reward we got before this state. This is optionally and can be 
-        changed from Config object. Set property 'm_rewardTerminal' to obtain such 
-        behavior. This will work well only if there are set of terminal states and if 
-        agent got to any of that states the episode will immidiatly finish. */
-    bool m_rewardTerminal;
 };
 
 }}

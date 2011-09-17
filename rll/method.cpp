@@ -214,9 +214,7 @@ void CActionMethod::runEpisode()
             throw CRLException("At least must be one possible next action");
         }
 
-        // 2. Select action according policy.
         CStatePtr currentState = pEnv->currentState();
-        typedef std::vector<std::pair<double, CActionPtr> > CValueActionMap;
 
         // TODO: This can be done on one time preallocated memory
         m_variants.resize(possibleActions.size());
@@ -254,14 +252,13 @@ void CActionMethod::runEpisode()
             updateValueFunctionImpl(
                 activeAgent
               , activeAgentIdx
-              , currentState
               , policySelection
               , greedySelection
               , activeAgent->releaseReward()
               );
         }
 
-        activeAgent->setLastStateWhenWasActive(currentState);
+        activeAgent->setLastStateWhenWasActive(currentState->Clone());
         activeAgent->setLastActionWhenWasActive(policySelection.second);
 
         // 4. Make last selected action, agents can recieve rewards on this step. 
@@ -289,7 +286,6 @@ void CActionMethod::runEpisode()
         updateValueFunctionImpl(
             pEnv->agents()[agentIdx]
           , agentIdx
-          , CStatePtr()
           , terminalAction
           , terminalAction
           , terminalRewards[agentIdx]

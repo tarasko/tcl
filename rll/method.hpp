@@ -73,17 +73,11 @@ class CActionMethod : public CMethodBase
 public:
     CActionMethod(CEnvAction* i_pEnv, const CConfigPtr& i_ptrConfig);
 
-    void run(unsigned int episodes);
-
-    using CMethodBase::episode;
-    using CMethodBase::step;
-
 protected:
     /// @brief Update value function for specific agent with new reward
     virtual void updateValueFunctionImpl(
         const CAgentPtr& activeAgent
       , int activeAgentIdx
-      , const CStatePtr& newState 
       , const std::pair<double, CActionPtr>& policySelection
       , const std::pair<double, CActionPtr>& greedySelection
       , double reward
@@ -95,7 +89,7 @@ private:
     /// @brief Process episode as actions-states method.
     void runEpisode();
 
-    CValueActionMap m_variants;
+    CValueActionMap m_variants; 
 };
 
 }}

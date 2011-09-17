@@ -8,35 +8,33 @@
 
 namespace tcl { namespace rll { 
 
-CLambdaTD::CLambdaTD(CEnvState* i_pEnv, CConfigPtr i_ptrConfig) 
-    : CStateMethod(i_pEnv, i_ptrConfig)
-    , m_traces(i_pEnv->agents().size())
-    , m_ptrConfig(i_ptrConfig)
-{
-}
-
-void CLambdaTD::prepareUpdates(
-    const CAgentPtr& i_ptrAgent
-  , CTraceMap& io_agentTraces
-  , const CVectorRlltPtr& i_stateForUpdate
-  , double i_stateValue
-  , double i_nextStateValue
-  , double i_reward
-  , CAgent::CUpdateList& o_updateList
+template<typename Base>
+void COnPolicyLambdaUpdater<Base>::updateValueFunctionHelper(
+    const CAgentPtr& agent
+  , size_t agentIdx
+  , const CVectorRlltPtr& oldState
+  , double newStateValue
+  , double reward
   )
 {
-    double temp = i_reward - i_stateValue + m_ptrConfig->m_gamma * i_nextStateValue;
+    double V = agent->getValue(oldState);
+    double newV = newStateValue;
+
+    CTraceMap& agentTraces = m_traces[agentIdx];
+    CAgent::CUpdateList updates;
+
+    double temp = reward - V + m_ptrConfig->m_gamma * newV;
 
     // Update eligibility trace for state
     // Accumulating traces: e(s) <- e(s) + 1
     // Replacing traces: e(s) <- 1 
     // Search trace
-    CTraceMap::iterator i = io_agentTraces.find(i_stateForUpdate);
+    CTraceMap::iterator i = agentTraces.find(oldState);
 
-    if (io_agentTraces.end() == i) 
+    if (agentTraces.end() == i) 
     {
         // No trace found. Add it.
-        io_agentTraces.insert(make_pair(i_stateForUpdate, 1.0));
+        agentTraces.insert(make_pair(oldState, 1.0));
     } 
     else 
     {
@@ -50,10 +48,10 @@ void CLambdaTD::prepareUpdates(
 
     // Fill update map
     // Run over all past agent states	
-    for (CTraceMap::iterator i = io_agentTraces.begin(); i != io_agentTraces.end();) 
+    for (CTraceMap::iterator i = agentTraces.begin(); i != agentTraces.end();) 
     {
         double change = m_ptrConfig->m_alpha * temp * i->second;
-        o_updateList.push_back(make_pair(i->first, i_ptrAgent->getValue(i->first) + change));
+        updates.push_back(make_pair(i->first, agent->getValue(i->first) + change));
         // Reduce trace
         // TODO: m_ptrConfig->m_lambda * m_ptrConfig->m_gamma we can do it on startup
         i->second *= (m_ptrConfig->m_lambda * m_ptrConfig->m_gamma);
@@ -62,11 +60,20 @@ void CLambdaTD::prepareUpdates(
         if (i->second < m_ptrConfig->m_etEpsilon)
         {
             CTraceMap::iterator toDelete = i++;
-            io_agentTraces.erase(toDelete);
+            agentTraces.erase(toDelete);
         }
         else 
             ++i;
     }
+
+    // Update value function
+    agent->update(updates);
+}
+
+
+CLambdaTD::CLambdaTD(CEnvState* env, const CConfigPtr& config) 
+    : COnPolicyLambdaUpdater<CStateMethod>(env, config)
+{
 }
 
 void CLambdaTD::updateValueFunctionImpl(
@@ -79,21 +86,38 @@ void CLambdaTD::updateValueFunctionImpl(
     CVectorRlltPtr ptrPrevState = 
         detail::translate(activeAgent->lastStateWhenWasActive(), CActionPtr(), activeAgentIdx);
 
-    double V = activeAgent->getValue(ptrPrevState);
-    double newV = newStateWithValue.first;
-
-    CTraceMap& agentTraces = m_traces[activeAgentIdx];
-    CAgent::CUpdateList updates;
-    prepareUpdates(activeAgent, agentTraces, ptrPrevState, V, newV, reward, updates);
-
-    g_log.Print("TD METHOD", "flushAgentRewards", updates);
-
-    // Update value function
-    activeAgent->update(updates);
+    updateValueFunctionHelper(
+        activeAgent
+      , activeAgentIdx
+      , ptrPrevState
+      , newStateWithValue.first
+      , reward
+      );
 }
 
-void CLambdaSarsa::updateValueFunctionImpl(int i_agentIndex, double i_reward)
+CLambdaSarsa::CLambdaSarsa(CEnvAction* env, const CConfigPtr& config)
+    : COnPolicyLambdaUpdater<CActionMethod>(env, config)
 {
+}
+
+void CLambdaSarsa::updateValueFunctionImpl(
+    const CAgentPtr& activeAgent
+  , int activeAgentIdx
+  , const std::pair<double, CActionPtr>& policySelection
+  , const std::pair<double, CActionPtr>&
+  , double reward
+  )
+{
+    CVectorRlltPtr ptrPrevStateAction = 
+        detail::translate(activeAgent->lastStateWhenWasActive(), activeAgent->lastActionWhenWasActive(), activeAgentIdx);
+
+    updateValueFunctionHelper(
+        activeAgent
+      , activeAgentIdx
+      , ptrPrevStateAction
+      , policySelection.first
+      , reward
+      );
 }
 
 void CLambdaWatkins::updateValueFunctionImpl(int i_agentIndex, double i_reward)
