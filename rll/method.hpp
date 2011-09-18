@@ -1,6 +1,7 @@
 #pragma once
 
 #include "rll_fwd.hpp"
+#include "state.hpp"
 #include "detail/policy.hpp"
 
 namespace tcl { namespace rll {
@@ -11,12 +12,12 @@ namespace tcl { namespace rll {
 /// I mean state value calculation both in SelectNext and Reward methods. Find 
 /// such places and make some kind of cache variables.
 ///
-/// @todo Hide policy from include files
-class CMethodBase 
+/// @todo Hide policy from include files.
+class method_base 
 {
 public:
-    CMethodBase(CEnvBase* pEnv, const CConfigPtr& ptrConfig);
-    virtual ~CMethodBase();
+    method_base(env_base* env, const CConfigPtr& config);
+    virtual ~method_base();
 
     /// @brief Run training loop.
     /// @param episodes - Number of episodes to train
@@ -26,70 +27,79 @@ public:
     unsigned int step() const;
 
 protected:
-    /// @brief Run episode single episode
-    virtual void runEpisode() = 0;  
+    /// @brief Run single episode.
+    virtual void run_episode_impl() = 0;  
 
-    CConfigPtr      m_ptrConfig;  //!< Config information
-    detail::CPolicy m_policy;     //!< Policy
-    CEnvBase*       m_pEnv;       //!< Environment
+    CConfigPtr      config_;     //!< Config information
+    detail::CPolicy policy_;     //!< Policy
+    env_base*       env_;        //!< Environment
 
-    unsigned int    m_episode;    //!< Current episode
-    unsigned int    m_step;       //!< Current step in episode
+    unsigned int    episode_;    //!< Current episode
+    unsigned int    step_;       //!< Current step in episode
 };
 
 /// @brief Base class for methods which operate only on states
-class CStateMethod : public CMethodBase 
+class method_state : public method_base 
 {
 public:
-    CStateMethod(CEnvState* pEnv, const CConfigPtr& ptrConfig);
+    typedef state state_type;
+
+    method_state(env_state* env, const CConfigPtr& config);
 
 protected:
     /// @brief Update value function for specific agent with new reward
-    /// @param activeAgent - current active agent
-    /// @param activeAgent - active agent index
-    /// @param newState - new state of environment right immediatelly after agent selection.
-    /// Can be null if this is post terminal state. Value function for post terminal state 
-    /// is always 0.
-    /// @param reward - reward that agent got by selecting @c newState
-    virtual void updateValueFunctionImpl(
-        const CAgentPtr& activeAgent
-      , int activeAgentIdx
-      , const std::pair<double, CStatePtr>& newStateWithValue
+    /// @param active_agent - current active agent
+    /// @param active_agent - active agent index
+    /// @param new_state_value - estimated value for new state returned by value function
+    /// When next state is terminal it should be 0.0
+    /// @param reward - reward that agent got by selecting @c new state
+    virtual void update_value_function_impl(
+        const agent_sp& active_agent
+      , int active_agent_idx
+      , double new_state_value
       , double reward
       ) = 0;
 
-private:
-    typedef std::vector<std::pair<double, CStatePtr> > CValueStateMap;
-
     /// @brief Process episode as states method.
-    void runEpisode();
+    virtual void run_episode_impl();
 
-    CValueStateMap m_variants;
+private:
+    typedef std::vector<std::pair<double, state_type> > value_state_map;
+
+    /// Used internally by run_episode_impl
+    /// Makeing this as member helps to avoid allocations for next 
+    /// possible state on each step.
+    value_state_map variants_; 
 };
 
 /// @brief Base class for methods which operate on state-action pairs
-class CActionMethod : public CMethodBase 
+class method_action : public method_base 
 {
 public:
-    CActionMethod(CEnvAction* i_pEnv, const CConfigPtr& i_ptrConfig);
+    typedef state_with_reserved_action state_type;
+
+    method_action(env_action* env, const CConfigPtr& config);
 
 protected:
     /// @brief Update value function for specific agent with new reward
-    virtual void updateValueFunctionImpl(
-        const CAgentPtr& activeAgent
-      , int activeAgentIdx
-      , const std::pair<double, CActionPtr>& policySelection
-      , const std::pair<double, CActionPtr>& greedySelection
+    virtual void update_value_function_impl(
+        const agent_sp& active_agent
+      , int active_agent_idx
+      , const std::pair<double, vector_rllt_csp>& policy_selection
+      , const std::pair<double, vector_rllt_csp>& greedy_selection
       , double reward
       ) = 0;
 
-private:
-    typedef std::vector<std::pair<double, CActionPtr> > CValueActionMap;
-
     /// @brief Process episode as actions-states method.
-    void runEpisode();
+    virtual void run_episode_impl();
 
-    CValueActionMap m_variants; 
+private:
+    typedef std::vector<std::pair<double, vector_rllt_csp> > value_action_map;
+
+    /// Used internally by run_episode_impl
+    /// Makeing this as member helps to avoid allocations for next 
+    /// possible state on each step.
+    value_action_map variants_; 
 };
 
 }}

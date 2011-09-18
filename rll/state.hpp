@@ -2,47 +2,79 @@
 
 #include "rll_fwd.hpp"
 
-#include <string>
-#include <map>
-
-#pragma warning(disable : 4290)
-
 namespace tcl { namespace rll {
 
-/// @brief Represent state signal.
-/// Every variable in state signal should have either int or double type.
-/// OTHERWISE YOU CAN GET bad_any_cast EXCEPTION!!!. Some implementation of 
-/// value function requires int type for all variables because it must have 
-/// exact sense when one state is equal to another. This is not possible 
-/// if some variable is double. Actually double variable is a problem for 
-/// feeling equal states. 
-/// @todo Replace strings to string refs.
-class CState 
+/// @brief Represent agent state.
+/// Agent state consist of fixed number of signal values. Application is supposed to 
+/// define number of signals in state, and give some meaning to this signals. 
+/// For example, 3x3 tic-tac-toe game could have 9 state signals each one represent
+/// corresponding square on game field. If square is empty then signal will have value 0, 
+/// if X - then 1, if O - then 2.
+/// @c state contains a shared pointer to internal representation, so copying of state object 
+/// will just increase reference counter. To make deep copy use @clone method.
+class state 
 {
 public:
-    DEFINE_EXCEPTION(CStateError);
+    state() {}
 
-    /// @brief Register named variable to state signal.
-    void RegisterVariable(const std::string& i_name);
-    /// @brief Destroy named variable in state signal.
-    void RevokeVariable(const std::string& i_name);
+    /// @brief Construct state with specified number of signals
+    state(size_t signals_num);
 
-    /// @brief Set value for named variable.
-    void SetValue(const std::string& i_name, rll_type i_val);
-    /// @brief Return value for named variable.
-    rll_type GetValue(const std::string& i_name);
+    // Accessors
+    const rll_type& operator[](size_t idx) const;
+    rll_type& operator[](size_t idx);
 
-    /// @brief Return state variables as array.
-    CVectorRlltPtr GetData() const;
+    /// @brief Return number of state signals.
+    size_t signals_num() const;
+    
+    /// @brief Return internal representation for state    
+    vector_rllt_csp get_internal_rep() const;
 
-    /// @brief Spawn new state the exact copy of exist one.
-    CStatePtr Clone() const;
-    /// @brief Compare state with another one.
-    bool IsEqual(const CStatePtr& i_ptrState) const;
+    /// @brief Spawn new state by makeing a deep copy of current one.
+    state clone() const;
 
 private:
-    typedef std::map<std::string, rll_type> CVarMap;
-    CVarMap m_vars;  //!< Map of named variables
+    friend bool operator==(const state& f, const state& s);
+
+    state(const vector_rllt_sp& signals);
+
+private:
+    vector_rllt_sp signals_;  //!< Signals
+};
+
+/// @brief Represent agent state with reserved slot for action.
+/// @copy state.
+class state_with_reserved_action
+{
+public:
+    state_with_reserved_action() {}
+
+    /// @brief Construct state with specified number of signals
+    state_with_reserved_action(size_t signals_num);
+
+    // Accessors
+    const rll_type& operator[](size_t idx) const;
+    rll_type& operator[](size_t idx);
+
+    /// @brief Return number of state signals.
+    size_t signals_num() const;
+    
+    /// @brief Return internal representation for state.
+    vector_rllt_csp get_internal_rep(rll_type action);
+
+    /// @brief Spawn new state by makeing a deep copy of current one.
+    state_with_reserved_action clone() const;
+
+private:
+    friend bool operator==(
+        const state_with_reserved_action& f
+      , const state_with_reserved_action& s
+      );
+
+    state_with_reserved_action(const vector_rllt_sp& signals);
+
+private:
+    vector_rllt_sp signals_;  //!< Signals
 };
 
 }}

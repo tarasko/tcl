@@ -16,7 +16,7 @@ class CPolicy
 public:
     DEFINE_EXCEPTION(CPolicyException)
 
-    CPolicy(const CConfigPtr& ptrConfig) : m_ptrConfig(ptrConfig) {}
+    CPolicy(const CConfigPtr& config) : config_(config) {}
 
     /// @brief Select element from map according to selected policy.
     /// T - should be map with key type as double
@@ -29,7 +29,7 @@ public:
         if (1 == sortedVariants.size())
             return sortedVariants.back();
 
-        switch (m_ptrConfig->m_policy)
+        switch (config_->policy_)
         {
             case CConfig::GREEDY: return runGreedy(sortedVariants);
             case CConfig::EPSILON_GREEDY: return runEGreedy(sortedVariants);
@@ -82,7 +82,7 @@ private:
 
         std::uniform_real_distribution<> real_dist(0.0, 1.0);
 
-        if (m_ptrConfig->m_epsilon >= real_dist(m_gen)) {
+        if (config_->m_epsilon >= real_dist(m_gen)) {
             // Make random move
             // Determine range of non-greedy actions and number of elements in it
             auto lb = std::lower_bound(
@@ -110,7 +110,7 @@ private:
             return runGreedy(sortedVariants);
     }
 
-    CConfigPtr   m_ptrConfig;  //!< Determine type of policy and policy constants
+    CConfigPtr   config_;  //!< Determine type of policy and policy constants
     std::mt19937 m_gen;        //!< Random number generator
 };
 

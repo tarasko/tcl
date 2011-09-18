@@ -6,22 +6,22 @@
 namespace tcl { namespace rll {
 
 /// @brief Implements value fucntion based on neuronal network.
-class CNeuronalNetwork : public CValueFunction 
+class vf_neuronal_network : public value_function 
 {
 public:
-    CNeuronalNetwork(const CConfigPtr& i_ptrConfig);
+    vf_neuronal_network(const CConfigPtr& config);
 
     /// @brief Return value for internal representation of state.
-    virtual double getValue(const CVectorRlltPtr& i_ptrState);
+    virtual double get_value(const vector_rllt_csp& st);
     /// @brief Correct value function according update map
-    virtual void update(const CUpdateList& i_list);
+    virtual void update(const update_list& lst);
 
 protected:
     /// @brief Wrap neuronal network created by FANN library
-    class CFannWrapper;
+    class fann_wrapper;
 
-    CFannWrapper* m_pFann;     //!< Use lazy init for it
-    CConfigPtr    m_ptrConfig; //!< Configuration object
+    fann_wrapper* fann_wrapper_;  //!< Use lazy init for it
+    CConfigPtr    config_;        //!< Configuration object
 };
 
 }}

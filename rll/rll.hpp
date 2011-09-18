@@ -1,12 +1,11 @@
 #pragma once
 
-#include "action.hpp"
 #include "agent.hpp"
 #include "config.hpp"
 #include "environment.hpp"
 #include "lambda_method.hpp"
-#include "neuronal_network.hpp"
 #include "state.hpp"
 #if defined(TCL_RLL_INT)
-#include "lookup_table.hpp"
+#include "vf_lookup_table.hpp"
 #endif
+#include "vf_neuronal_network.hpp"

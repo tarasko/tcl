@@ -8,33 +8,43 @@ using std::make_pair;
 
 namespace tcl { namespace rll {
 
-CAgent::CAgent(const CValueFunctionPtr& i_ptrFunc) 
-    : m_ptrFunc(i_ptrFunc)
-    , m_reward(0.0)
+agent::agent(const value_function_sp& func) 
+    : func_(func)
+    , reward_(0.0)
 {
-    assert(m_ptrFunc);
+    assert(func_);
 }
 
-double CAgent::getValue(const CVectorRlltPtr& i_ptrState)
+double agent::get_value(const vector_rllt_csp& st)
 {
-    return m_ptrFunc->getValue(i_ptrState);
+    return func_->get_value(st);
 }
 
-void CAgent::update(const CUpdateList& i_list)
+void agent::update(const update_list& lst)
 {
-	m_ptrFunc->update(i_list);
+	func_->update(lst);
 }
 
-void CAgent::addReward(double reward)
+void agent::add_reward(double reward)
 {
-    m_reward += reward;
+    reward_ += reward;
 }
 
-double CAgent::releaseReward()
+double agent::release_reward()
 {
-    double tmp = m_reward;
-    m_reward = 0.0;
+    double tmp = reward_;
+    reward_ = 0.0;
     return tmp;
+}
+
+vector_rllt_csp agent::prev_state() const
+{
+    return prev_state_;
+}
+
+void agent::set_prev_state(const vector_rllt_csp& prev_state)
+{
+    prev_state_ = prev_state;
 }
 
 }}

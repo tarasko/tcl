@@ -1,5 +1,4 @@
 #include <tcl/rll/rll.hpp>
-#include <tcl/rll/detail/utils.hpp>
 
 #include <vector>
 #include <fstream>
@@ -8,186 +7,125 @@
 using namespace tcl::rll;
 using namespace std;
 
-class CTicTacToeState : public CEnvState 
+class tic_tac_toe : public env_state 
 {
+    static const int WINING_POSITIONS[8][3];
+
 public:
-    CTicTacToeState();
+    tic_tac_toe();
 
 private:
-    static const char* formatState(int x, int y)
-    {
-        static char buf[3];
-        sprintf(buf, "%d%d", x, y);
-        return buf;
-    }
+	virtual void init_episode();
+    virtual size_t active_agent() const;
+    virtual state_type current_state() const;
+    virtual std::vector<state_type> get_possible_next_states() const;
+    virtual bool set_next_state_assign_rewards(const state_type& state);
 
-	virtual void initEpisode();
-    virtual size_t activeAgent() const;
-    virtual CStatePtr currentState() const;
-    virtual std::vector<CStatePtr> getPossibleNextStates() const;
-    virtual bool setNextStateAssignRewards(const CStatePtr& state);
-
-
-    /// @param o_reward - Get reward for current state.
-    /// @return true if game has finished.
-    bool analyzeState(CVectorDbl& o_rewards) const;
-    void printState() const;
+    void print_state() const;
 
 private:
-    size_t    m_activeAgentIdx;
-    CStatePtr m_state;
+    size_t     active_agent_idx_;
+    state_type state_;
 };
 
-CTicTacToeState::CTicTacToeState() 
-{
-    m_state = make_shared<CState>();
-    m_state->RegisterVariable("00");
-    m_state->RegisterVariable("01");
-    m_state->RegisterVariable("02");
-    m_state->RegisterVariable("10");
-    m_state->RegisterVariable("11");
-    m_state->RegisterVariable("12");
-    m_state->RegisterVariable("20");
-    m_state->RegisterVariable("21");
-    m_state->RegisterVariable("22");
+const int tic_tac_toe::WINING_POSITIONS[8][3] = {
+    {0, 1, 2},
+    {3, 4, 5},
+    {6, 7, 8},
+    {0, 3, 6},
+    {1, 4, 7},
+    {2, 5, 8},
+    {0, 4, 8},
+    {2, 4, 6}
+};
 
+tic_tac_toe::tic_tac_toe()
+    : state_(9)
+{
     // Create value function and method
-    CValueFunctionPtr ptrFunc = make_shared<CLookupTable>();
-    CAgentPtr XPlayer = make_shared<CAgent>(ptrFunc);
-    CAgentPtr OPlayer = make_shared<CAgent>(ptrFunc);
+    value_function_sp ptrFunc = make_shared<vf_lookup_table>();
+    agent_sp XPlayer = make_shared<agent>(ptrFunc);
+    agent_sp OPlayer = make_shared<agent>(ptrFunc);
     agents().push_back(XPlayer);
     agents().push_back(OPlayer);
 }
 
-void CTicTacToeState::initEpisode() 
+void tic_tac_toe::init_episode() 
 {
-    m_activeAgentIdx = 0;
-    for (int x=0; x<3; ++x) 
+    active_agent_idx_ = 0;
+    for (int i=0; i<9; ++i) 
+        state_[i] = 0;
+}
+
+size_t tic_tac_toe::active_agent() const
+{
+    return active_agent_idx_;
+}
+
+tic_tac_toe::state_type tic_tac_toe::current_state() const
+{
+    return state_;
+}
+
+vector<tic_tac_toe::state_type> tic_tac_toe::get_possible_next_states() const
+{
+    vector<state_type> result;
+    result.reserve(9);
+
+    for(int i = 0; i<9; ++i)
     {
-        for (int y=0; y<3; ++y) 
-            m_state->SetValue(formatState(x, y), 0);
-    }
-}
-
-size_t CTicTacToeState::activeAgent() const
-{
-    return m_activeAgentIdx;
-}
-
-CStatePtr CTicTacToeState::currentState() const
-{
-    return m_state;
-}
-
-std::vector<CStatePtr> CTicTacToeState::getPossibleNextStates() const
-{
-    std::vector<CStatePtr> result;
-
-    // Run over all squares
-    int squares[3][3];
-    for (int x=0; x<3; ++x) 
-    {
-        for (int y=0; y<3; ++y) 
+        if (state_[i] == 0) 
         {
-            // Fill squares
-            const char* dest = formatState(x, y);
-            squares[x][y] = m_state->GetValue(dest);
-            if (0 == squares[x][y]) 
-            {
-                // Make new state
-                CStatePtr ptrNewState = m_state->Clone();
-                ptrNewState->SetValue(dest, m_activeAgentIdx == 0 ? 1 : 2);
-                result.push_back(ptrNewState);
-            }
+            state new_state = state_.clone();
+            new_state[i] = active_agent_idx_ == 0 ? 1 : 2;
+            result.push_back(new_state);
         }
     }
 
     return result;
 }
 
-bool CTicTacToeState::setNextStateAssignRewards(const CStatePtr& state)
+bool tic_tac_toe::set_next_state_assign_rewards(const state_type& state)
 {
-    m_state = state;
+    state_ = state;
 
-    // 0-empty 1-X 2-O 
-    int   squares[3][3];
-    // true - if player that just has maked move has it own sign
-    // in corresponding square
-    bool  my[3][3];
-    // true if there are no empty squares
-    bool  hasEmptySquares = false;
-    int   activePlayerSigns = m_activeAgentIdx == 0 ? 1 : 2;
+    int my_sign = active_agent_idx_ == 0 ? 1 : 2;
+    bool has_empty_squares = false;
 
-    // Fill arrays
-    for (int x=0; x<3; ++x) {
-        for (int y=0; y<3; ++y) {
-            // Fill squares
-            squares[x][y] = m_state->GetValue(formatState(x, y));
-            // Fill my
-            my[x][y] = squares[x][y] == activePlayerSigns;
-            // Update noEmptySquares
-            hasEmptySquares |= squares[x][y] == 0;
-        }
-    }
-
-    // Check horizontal lines
-    for (int y=0; y<3; ++y) {
-        bool lastMoveWin = squares[0][y] == squares[1][y] && 
-            squares[1][y] == squares[2][y] &&
-            squares[0][y] == activePlayerSigns;
-        if (lastMoveWin) {
-            agents()[m_activeAgentIdx]->addReward(1.0);
-            agents()[m_activeAgentIdx ^ 1]->addReward(-1.0);
-            return false;
-        }
-    }
-
-    // Check vertical lines
-    for (int x=0; x<3; ++x) 
+    // Examine game field
+    for (int i=0; i<8; ++i) 
     {
-        bool lastMoveWin = 
-            squares[x][0] == squares[x][1] && 
-            squares[x][1] == squares[x][2] &&
-            squares[x][0] == activePlayerSigns;
+        bool are_all_captured = true;
 
-        if (lastMoveWin) 
+        for (int k=0; k<3; ++k)
         {
-            agents()[m_activeAgentIdx]->addReward(1.0);
-            agents()[m_activeAgentIdx ^ 1]->addReward(-1.0);
+            are_all_captured = 
+                are_all_captured && 
+                state_[WINING_POSITIONS[i][k]] == my_sign;
+
+            has_empty_squares = has_empty_squares || state_[WINING_POSITIONS[k][i]] == 0;
+        }
+
+        if (are_all_captured)
+        {
+            agents()[active_agent_idx_]->add_reward(1.0);
+            agents()[active_agent_idx_ ^ 1]->add_reward(-1.0);
             return false;
         }
-    }
-
-    // Check diagonal lines
-    bool lastMoveWin = 
-        squares[0][0] == squares[1][1] &&
-        squares[1][1] == squares[2][2] &&
-        squares[0][0] == activePlayerSigns;
-
-    lastMoveWin |= 
-        squares[2][0] == squares[1][1] &&
-        squares[1][1] == squares[0][2] &&
-        squares[2][0] == activePlayerSigns;
-
-    if (lastMoveWin) 
-    {
-        agents()[m_activeAgentIdx]->addReward(1.0);
-        agents()[m_activeAgentIdx ^ 1]->addReward(-1.0);
-        return false;
     }
 
     // Ok now check for draw
-    if (!hasEmptySquares) 
+    if (!has_empty_squares) 
         return false;
 
     // Switch active agent
-    printState();
-    m_activeAgentIdx ^= 1;
+    print_state();
+    active_agent_idx_ ^= 1;
 
     return true;
 }
 
-void CTicTacToeState::printState() const
+void tic_tac_toe::print_state() const
 {
     if (episode() % 100) 
         return;
@@ -195,14 +133,15 @@ void CTicTacToeState::printState() const
     cout << "Episode: " << episode()
         << " Step: " <<  step() 
         << " Value: " 
-        << agents()[m_activeAgentIdx]->getValue(detail::translate(currentState(), CActionPtr(), m_activeAgentIdx))
+        << agents()[active_agent_idx_]->get_value(state_.clone().get_internal_rep())
         << endl;
 
-    for (int x=0; x<3; ++x) {
-        for (int y=0; y<3; ++y) {
-            const char* dest = formatState(x, y);
+    for (int x=0; x<3; ++x) 
+    {
+        for (int y=0; y<3; ++y) 
+        {
             // Fill squares
-            int sign = m_state->GetValue(dest);
+            int sign = state_[x*3 + y];
             if (1 == sign) {
                 cout << "X";
             } else if (2 == sign) {
@@ -219,18 +158,18 @@ void CTicTacToeState::printState() const
 
 int main() 
 {
-    CConfigPtr ptrConfig(new CConfig);
-    ptrConfig->m_alpha = 0.1;
-    ptrConfig->m_lambda = 0.5;
-    ptrConfig->m_gamma = 1.0;
-    ptrConfig->m_accumulating = false;
-    ptrConfig->m_hidden = 8;
-    ptrConfig->m_vfMin = -1.0;
-    ptrConfig->m_vfMax = 1.0;
-    ptrConfig->m_policy = CConfig::EPSILON_GREEDY;
+    CConfigPtr config(new CConfig);
+    config->m_alpha = 0.1;
+    config->m_lambda = 0.5;
+    config->m_gamma = 1.0;
+    config->m_accumulating = false;
+    config->m_hidden = 8;
+    config->m_vfMin = -1.0;
+    config->m_vfMax = 1.0;
+    config->policy_ = CConfig::EPSILON_GREEDY;
 
-    CTicTacToeState game;
-    CLambdaTD m(&game, ptrConfig);
+    tic_tac_toe game;
+    method_state_onpolicy m(&game, config);
 
     m.run(100000);
 }

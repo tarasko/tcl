@@ -2,45 +2,45 @@
 #include "agent.hpp"
 #include "environment.hpp"
 
-#include "detail/logger.hpp"
-
 #include <cassert>
+#include <functional>
 
 namespace tcl { namespace rll { 
 
 template<typename Base>
-void COnPolicyLambdaUpdater<Base>::updateValueFunctionHelper(
-    const CAgentPtr& agent
-  , size_t agentIdx
-  , const CVectorRlltPtr& oldState
-  , double newStateValue
+void onpolicy_lambda_updater<Base>::update_value_function_helper(
+    const agent_sp& active_agent
+  , size_t active_agent_idx
+  , const vector_rllt_csp& old_state
+  , double new_state_value
   , double reward
   )
 {
-    double V = agent->getValue(oldState);
-    double newV = newStateValue;
+    traces_map& active_agent_traces = traces_[active_agent_idx];
 
-    CTraceMap& agentTraces = m_traces[agentIdx];
-    CAgent::CUpdateList updates;
+    double v = active_agent->get_value(old_state);
+    double new_v = new_state_value;
 
-    double temp = reward - V + m_ptrConfig->m_gamma * newV;
+    agent::update_list updates;
+
+    double temp = reward - v + config_->m_gamma * new_v;
 
     // Update eligibility trace for state
     // Accumulating traces: e(s) <- e(s) + 1
     // Replacing traces: e(s) <- 1 
     // Search trace
-    CTraceMap::iterator i = agentTraces.find(oldState);
+    traces_map::iterator i = active_agent_traces.find(old_state);
 
-    if (agentTraces.end() == i) 
+    if (active_agent_traces.end() == i) 
     {
         // No trace found. Add it.
-        agentTraces.insert(make_pair(oldState, 1.0));
+        active_agent_traces.insert(make_pair(old_state, 1.0));
     } 
     else 
     {
         // Trace found. Update it.
         // Accumulating or replacing traces?
-        if (m_ptrConfig->m_accumulating)
+        if (config_->m_accumulating)
             ++i->second;
         else
             i->second = 1;
@@ -48,182 +48,76 @@ void COnPolicyLambdaUpdater<Base>::updateValueFunctionHelper(
 
     // Fill update map
     // Run over all past agent states	
-    for (CTraceMap::iterator i = agentTraces.begin(); i != agentTraces.end();) 
+    for (traces_map::iterator i = active_agent_traces.begin(); i != active_agent_traces.end();) 
     {
-        double change = m_ptrConfig->m_alpha * temp * i->second;
-        updates.push_back(make_pair(i->first, agent->getValue(i->first) + change));
+        double change = config_->m_alpha * temp * i->second;
+        updates.push_back(make_pair(i->first, active_agent->get_value(i->first) + change));
         // Reduce trace
-        // TODO: m_ptrConfig->m_lambda * m_ptrConfig->m_gamma we can do it on startup
-        i->second *= (m_ptrConfig->m_lambda * m_ptrConfig->m_gamma);
+        // TODO: config_->m_lambda * config_->m_gamma we can do it on startup
+        i->second *= (config_->m_lambda * config_->m_gamma);
 
-        // Erase traces that become less then m_ptrConfig->m_etEpsilon
-        if (i->second < m_ptrConfig->m_etEpsilon)
+        // Erase traces that become less then config_->m_etEpsilon
+        if (i->second < config_->m_etEpsilon)
         {
-            CTraceMap::iterator toDelete = i++;
-            agentTraces.erase(toDelete);
+            traces_map::iterator toDelete = i++;
+            active_agent_traces.erase(toDelete);
         }
         else 
             ++i;
     }
 
     // Update value function
-    agent->update(updates);
+    active_agent->update(updates);
 }
 
+template<typename Base>
+void onpolicy_lambda_updater<Base>::run_episode_impl()
+{
+    std::for_each(traces_.begin(), traces_.end(), std::mem_fn(&traces_map::clear));
+    Base::run_episode_impl();
+}
 
-CLambdaTD::CLambdaTD(CEnvState* env, const CConfigPtr& config) 
-    : COnPolicyLambdaUpdater<CStateMethod>(env, config)
+method_state_onpolicy::method_state_onpolicy(env_state* env, const CConfigPtr& config) 
+    : onpolicy_lambda_updater<method_state>(env, config)
 {
 }
 
-void CLambdaTD::updateValueFunctionImpl(
-    const CAgentPtr& activeAgent
-  , int activeAgentIdx
-  , const std::pair<double, CStatePtr>& newStateWithValue
+void method_state_onpolicy::update_value_function_impl(
+    const agent_sp& active_agent
+  , int active_agent_idx
+  , double new_state_value
   , double reward
   )
 {
-    CVectorRlltPtr ptrPrevState = 
-        detail::translate(activeAgent->lastStateWhenWasActive(), CActionPtr(), activeAgentIdx);
-
-    updateValueFunctionHelper(
-        activeAgent
-      , activeAgentIdx
-      , ptrPrevState
-      , newStateWithValue.first
+    update_value_function_helper(
+        active_agent
+      , active_agent_idx
+      , active_agent->prev_state()
+      , new_state_value
       , reward
       );
 }
 
-CLambdaSarsa::CLambdaSarsa(CEnvAction* env, const CConfigPtr& config)
-    : COnPolicyLambdaUpdater<CActionMethod>(env, config)
+method_action_onpolicy::method_action_onpolicy(env_action* env, const CConfigPtr& config)
+    : onpolicy_lambda_updater<method_action>(env, config)
 {
 }
 
-void CLambdaSarsa::updateValueFunctionImpl(
-    const CAgentPtr& activeAgent
-  , int activeAgentIdx
-  , const std::pair<double, CActionPtr>& policySelection
-  , const std::pair<double, CActionPtr>&
+void method_action_onpolicy::update_value_function_impl(
+    const agent_sp& active_agent
+  , int active_agent_idx
+  , const std::pair<double, vector_rllt_csp>& policy_selection
+  , const std::pair<double, vector_rllt_csp>&
   , double reward
   )
 {
-    CVectorRlltPtr ptrPrevStateAction = 
-        detail::translate(activeAgent->lastStateWhenWasActive(), activeAgent->lastActionWhenWasActive(), activeAgentIdx);
-
-    updateValueFunctionHelper(
-        activeAgent
-      , activeAgentIdx
-      , ptrPrevStateAction
-      , policySelection.first
+    update_value_function_helper(
+        active_agent
+      , active_agent_idx
+      , active_agent->prev_state()
+      , policy_selection.first
       , reward
       );
 }
-
-void CLambdaWatkins::updateValueFunctionImpl(int i_agentIndex, double i_reward)
-{
-}
-
-///** @todo Avoid repeating of calculation value function */
-//CVectorRlltPtr CLambdaSarsa::updateValueFunction(
-//    int i_agentIndex
-//  , double i_reward
-//  , bool i_terminal
-//  ) 
-//{
-//    CVectorRlltPtr ptrStateAction = translate(
-//        m_pEnv->m_ptrPrevState
-//      , m_ptrPerformedAction
-//      , i_agentIndex
-//      );
-//
-//    CAgentPtr ptrAgent = m_pEnv->m_agents[i_agentIndex];
-//    assert(!(ptrAgent->m_ptrPrevState == NULL && i_terminal));
-//    if (ptrAgent->m_ptrPrevState == NULL) {
-//        // Agent first action
-//        // This is first agent action and episode still continue
-//        // Here we must only to store internal state as previous agent state
-//        ptrAgent->m_ptrPrevState = ptrStateAction;
-//    } else {
-//        // Here is repeating of value function calculation 
-//        double Q = i_terminal ? m_performedValue : ptrAgent->m_ptrFunc->GetValue(ptrAgent->m_ptrPrevState);
-//        double newQ = i_terminal ? 0 : m_performedValue;
-//        double temp = i_reward + m_ptrConfig->m_gamma * newQ - Q;
-//
-//        ptrAgent->UpdateTrace(
-//            i_terminal ? ptrStateAction : ptrAgent->m_ptrPrevState
-//          , m_ptrConfig->m_accumulating
-//          , m_ptrConfig->m_etEpsilon
-//          );
-//
-//        CValueFunction::CUpdateList update;
-//        typedef CAgent::CTracesMap CTracesMap;
-//        CTracesMap& agentTraces = ptrAgent->m_traces;
-//
-//        // TODO: Use lambda here
-//        for (CTracesMap::iterator i = agentTraces.begin(); i != agentTraces.end(); ++i) {
-//            double change = m_ptrConfig->m_alpha * temp * i->second;
-//            update.push_back(make_pair(i->first, ptrAgent->m_ptrFunc->GetValue(i->first) + change));
-//            // Reduce trace
-//            i->second *= m_ptrConfig->m_lambda;
-//        }
-//        g_log.Print("SARSA METHOD", "flushAgentRewards", update);
-//
-//        // Update value function
-//        ptrAgent->m_ptrFunc->Update(update);
-//    }
-//    return ptrStateAction;
-//}
-//
-//CVectorRlltPtr CLambdaWatkins::updateValueFunction(int i_agentIndex,
-//                                                  double i_reward, 
-//                                                  bool i_terminal) 
-//{
-//    CVectorRlltPtr ptrStateAction = translate(
-//        m_pEnv->m_ptrPrevState
-//      , m_ptrPerformedAction
-//      , i_agentIndex
-//      );
-//    CAgentPtr ptrAgent = m_pEnv->m_agents[i_agentIndex];
-//    assert(!(ptrAgent->m_ptrPrevState == NULL && i_terminal));
-//    if (ptrAgent->m_ptrPrevState == NULL) {
-//        // Agent first action
-//        // This is first agent action and episode still continue
-//        // Here we must only to store internal state as previous agent state
-//        ptrAgent->m_ptrPrevState = ptrStateAction;
-//    } else {
-//        double Q = i_terminal ? m_performedValue : ptrAgent->m_ptrFunc->GetValue(ptrAgent->m_ptrPrevState);
-//        // More complicated rule for newQ than in Sarsa
-//        double newQ = i_terminal ? 
-//            0 : (m_performedValue == m_greedyValue ? m_performedValue : m_greedyValue);
-//        double temp = i_reward + m_ptrConfig->m_gamma * newQ - Q;
-//
-//        // Add previous state to eligibility traces 
-//        ptrAgent->UpdateTrace(
-//            i_terminal ? ptrStateAction : ptrAgent->m_ptrPrevState
-//          , m_ptrConfig->m_accumulating
-//          , m_ptrConfig->m_etEpsilon
-//          );
-//
-//        CValueFunction::CUpdateList update;
-//        typedef CAgent::CTracesMap CTracesMap;
-//        CTracesMap& agentTraces = ptrAgent->m_traces;
-//
-//        // Use lambda here
-//        for (CTracesMap::iterator i = agentTraces.begin(); i != agentTraces.end(); ++i) {
-//            double change = m_ptrConfig->m_alpha * temp * i->second;
-//            update.push_back(make_pair(i->first, ptrAgent->m_ptrFunc->GetValue(i->first) + change));
-//            // Reduce trace
-//            i->second *= m_ptrConfig->m_lambda;
-//        }
-//        g_log.Print("WATKINS METHOD", "flushAgentRewards", update);
-//        // If the last action was not greedy then kill all traces
-//        if (!i_terminal && (m_performedValue != m_greedyValue)) {
-//            agentTraces.clear();
-//        }
-//        ptrAgent->m_ptrFunc->Update(update);
-//    }
-//    return ptrStateAction;
-//}
 
 }}

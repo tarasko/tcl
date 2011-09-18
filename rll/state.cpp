@@ -1,76 +1,97 @@
 #include "state.hpp"
 
 #include <algorithm>
+#include <cassert>
 
 namespace tcl { namespace rll {
 
-void CState::RegisterVariable(const std::string& i_name) 
+state::state(size_t signals_num)
+    : signals_(std::make_shared<vector_rllt>(signals_num))
 {
-    if (m_vars.find(i_name) != m_vars.end()) {
-        throw CStateError("Variable with such name already exists\n");
-    } else {
-        m_vars[i_name] = 0;
-    }
 }
 
-void CState::RevokeVariable(const std::string& i_name) 
+const rll_type& state::operator[](size_t idx) const
 {
-    CVarMap::iterator i = m_vars.find(i_name);
-    if (i == m_vars.end()) {
-        throw CStateError("Cannot find variable with such name\n");
-    } else {
-        m_vars.erase(i);
-    }
+    return signals_->operator[](idx);
 }
 
-void CState::SetValue(const std::string& i_name, rll_type i_val) 
+rll_type& state::operator[](size_t idx)
 {
-    CVarMap::iterator i = m_vars.find(i_name);
-    if (i == m_vars.end()) {
-        throw CStateError("Cannot find variable");
-    } else {
-        i->second = i_val;
-    }
+    return signals_->operator[](idx);
 }
 
-rll_type CState::GetValue(const std::string& i_name) 
+/// @brief Return number of state signals
+size_t state::signals_num() const
 {
-    CVarMap::iterator i = m_vars.find(i_name);
-    if (i == m_vars.end()) {
-        throw CStateError("Cannot find variable");
-    } else {
-        return i->second;
-    }
+    return signals_->size();
 }
 
-CVectorRlltPtr CState::GetData() const 
+vector_rllt_csp state::get_internal_rep() const
 {
-    CVectorRlltPtr result = std::make_shared<CVectorRllt>((size_t)m_vars.size());
-
-    std::transform(m_vars.begin(), m_vars.end(), result->begin(), [](CVarMap::const_reference r) -> rll_type
-    {
-        return r.second;
-    });
-
-    return result;
+    return signals_;
 }
 
-CStatePtr CState::Clone() const 
+state state::clone() const
 {
-    return std::make_shared<CState>(*this);
+    vector_rllt_sp signals = std::make_shared<vector_rllt>(*signals_);
+    return state(signals);
 }
 
-bool CState::IsEqual(const CStatePtr& i_ptrState) const
+state::state(const vector_rllt_sp& signals)
+    : signals_(signals)
 {
-    return std::equal(
-        m_vars.begin()
-      , m_vars.end()
-      , i_ptrState->m_vars.begin()
-      , [](CVarMap::const_reference r1, CVarMap::const_reference r2)
-        {
-            return r1.second == r2.second;
-        }
-      );
+}
+
+bool operator==(const state& f, const state& s)
+{
+    return std::equal(f.signals_->begin(), f.signals_->end(), s.signals_->begin());
+}
+
+// -------------- class state_with_reserved_action -------------------
+
+state_with_reserved_action::state_with_reserved_action(size_t signals_num)
+    : signals_(std::make_shared<vector_rllt>(signals_num + 1))
+{
+}
+
+const rll_type& state_with_reserved_action::operator[](size_t idx) const
+{
+    assert(idx < signals_->size() - 1);
+    return signals_->operator[](idx);
+}
+
+rll_type& state_with_reserved_action::operator[](size_t idx)
+{
+    assert(idx < signals_->size() - 1);
+    return signals_->operator[](idx);
+}
+
+/// @brief Return number of state signals
+size_t state_with_reserved_action::signals_num() const
+{
+    return signals_->size() - 1;
+}
+
+vector_rllt_csp state_with_reserved_action::get_internal_rep(rll_type action)
+{
+    signals_->back() = action;
+    return signals_;
+}
+
+state_with_reserved_action state_with_reserved_action::clone() const
+{
+    vector_rllt_sp signals = std::make_shared<vector_rllt>(*signals_);
+    return state_with_reserved_action(signals);
+}
+
+state_with_reserved_action::state_with_reserved_action(const vector_rllt_sp& signals)
+    : signals_(signals)
+{
+}
+
+bool operator==(const state_with_reserved_action& f, const state_with_reserved_action& s)
+{
+    return std::equal(f.signals_->begin(), f.signals_->end(), s.signals_->begin());
 }
 
 }}

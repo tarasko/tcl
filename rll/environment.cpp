@@ -3,24 +3,24 @@
 
 namespace tcl { namespace rll {
 
-std::vector<CAgentPtr>& CEnvBase::agents()
+std::vector<agent_sp>& env_base::agents()
 {
-    return m_agents;
+    return agents_;
 }
 
-const std::vector<CAgentPtr>& CEnvBase::agents() const
+const std::vector<agent_sp>& env_base::agents() const
 {
-    return m_agents;
+    return agents_;
 }
 
-unsigned int CEnvBase::episode() const
+unsigned int env_base::episode() const
 {
-    return m_method->episode();
+    return method_->episode();
 }
 
-unsigned int CEnvBase::step() const
+unsigned int env_base::step() const
 {
-    return m_method->step();
+    return method_->step();
 }
 
 }}

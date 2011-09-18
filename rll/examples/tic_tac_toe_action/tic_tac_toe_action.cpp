@@ -8,218 +8,123 @@
 using namespace tcl::rll;
 using namespace std;
 
-class CTicTacToeAction : public CAction
+class tic_tac_toe : public env_action 
 {
+    static const int WINING_POSITIONS[8][3];
+
 public:
-    static shared_ptr<CTicTacToeAction> create(int x, int y)
-    {
-        auto act = make_shared<CTicTacToeAction>();
-        act->m_x = x;
-        act->m_y = y;
-        act->m_id = y * 3 + x;
-        return act;
-    }
-
-    rll_type getData() const
-    {
-        return m_id;
-    }
-
-    int x() const
-    {
-        return m_x;
-    }
-
-    int y() const
-    {
-        return m_y;
-    }
+    tic_tac_toe();
 
 private:
-    int m_x;
-    int m_y;
-    int m_id;
+	virtual void init_episode();
+    virtual size_t active_agent() const;
+    virtual state_type current_state() const;
+    virtual vector<rll_type> get_possible_actions() const;
+    virtual bool do_action_assign_rewards(rll_type action);
+
+    void print_state(rll_type action) const;
+
+private:
+    size_t     active_agent_idx_;
+    state_type state_;
 };
 
-class CTicTacToe : public CEnvAction 
-{
-public:
-    CTicTacToe();
-
-private:
-    static const char* formatState(int x, int y)
-    {
-        static char buf[3];
-        sprintf(buf, "%d%d", x, y);
-        return buf;
-    }
-
-	virtual void initEpisode();
-    virtual size_t activeAgent() const;
-    virtual CStatePtr currentState() const;
-    virtual std::vector<CActionPtr> getPossibleActions() const;
-    virtual bool doActionAssignRewards(const CActionPtr& action);
-
-    /// @param o_reward - Get reward for current state.
-    /// @return true if game has finished.
-    bool analyzeState(CVectorDbl& o_rewards) const;
-    void printState(const shared_ptr<CTicTacToeAction>& action) const;
-
-private:
-    size_t    m_activeAgentIdx;
-    CStatePtr m_state;
+const int tic_tac_toe::WINING_POSITIONS[8][3] = {
+    {0, 1, 2},
+    {3, 4, 5},
+    {6, 7, 8},
+    {0, 3, 6},
+    {1, 4, 7},
+    {2, 5, 8},
+    {0, 4, 8},
+    {2, 4, 6}
 };
 
-CTicTacToe::CTicTacToe() 
+tic_tac_toe::tic_tac_toe()
+    : state_(9)
 {
-    m_state = make_shared<CState>();
-    m_state->RegisterVariable("00");
-    m_state->RegisterVariable("01");
-    m_state->RegisterVariable("02");
-    m_state->RegisterVariable("10");
-    m_state->RegisterVariable("11");
-    m_state->RegisterVariable("12");
-    m_state->RegisterVariable("20");
-    m_state->RegisterVariable("21");
-    m_state->RegisterVariable("22");
-
     // Create value function and method
-    CValueFunctionPtr ptrFunc = make_shared<CLookupTable>();
-    CAgentPtr XPlayer = make_shared<CAgent>(ptrFunc);
-    CAgentPtr OPlayer = make_shared<CAgent>(ptrFunc);
+    value_function_sp ptrFunc = make_shared<vf_lookup_table>();
+    agent_sp XPlayer = make_shared<agent>(ptrFunc);
+    agent_sp OPlayer = make_shared<agent>(ptrFunc);
     agents().push_back(XPlayer);
     agents().push_back(OPlayer);
 }
 
-void CTicTacToe::initEpisode() 
+
+void tic_tac_toe::init_episode() 
 {
-    m_activeAgentIdx = 0;
-    for (int x=0; x<3; ++x) 
+    active_agent_idx_ = 0;
+    for (int i=0; i<9; ++i) 
+        state_[i] = 0;
+}
+
+size_t tic_tac_toe::active_agent() const
+{
+    return active_agent_idx_;
+}
+
+tic_tac_toe::state_type tic_tac_toe::current_state() const
+{
+    return state_;
+}
+
+std::vector<rll_type> tic_tac_toe::get_possible_actions() const
+{
+    std::vector<rll_type> result;
+    result.reserve(9);
+
+    for(int i = 0; i<9; ++i)
     {
-        for (int y=0; y<3; ++y) 
-            m_state->SetValue(formatState(x, y), 0);
-    }
-}
-
-size_t CTicTacToe::activeAgent() const
-{
-    return m_activeAgentIdx;
-}
-
-CStatePtr CTicTacToe::currentState() const
-{
-    return m_state;
-}
-
-std::vector<CActionPtr> CTicTacToe::getPossibleActions() const
-{
-    std::vector<CActionPtr> result;
-
-    // Run over all squares
-    int squares[3][3];
-    for (int x=0; x<3; ++x) 
-    {
-        for (int y=0; y<3; ++y) 
-        {
-            // Fill squares
-            const char* dest = formatState(x, y);
-            squares[x][y] = m_state->GetValue(dest);
-            if (0 == squares[x][y]) 
-                result.push_back(CTicTacToeAction::create(x, y));
-        }
+        if (state_[i] == 0) 
+            result.push_back(i);
     }
 
     return result;
 }
 
-bool CTicTacToe::doActionAssignRewards(const CActionPtr& _action)
+bool tic_tac_toe::do_action_assign_rewards(rll_type action)
 {
-    // Evaluate new state
-    shared_ptr<CTicTacToeAction> action = static_pointer_cast<CTicTacToeAction>(_action);
+    print_state(action);
+    int my_sign = active_agent_idx_ == 0 ? 1 : 2;
 
-    // Switch active agent
-    printState(action);
+    state_[action] = my_sign;
 
-    const char* dest = formatState(action->x(), action->y());
-    m_state->SetValue(dest, m_activeAgentIdx == 0 ? 1 : 2);
+    bool has_empty_squares = false;
 
-    // 0-empty 1-X 2-O 
-    int   squares[3][3];
-    // true - if player that just has maked move has it own sign
-    // in corresponding square
-    bool  my[3][3];
-    // true if there are no empty squares
-    bool  hasEmptySquares = false;
-    int   activePlayerSigns = m_activeAgentIdx == 0 ? 1 : 2;
-
-    // Fill arrays
-    for (int x=0; x<3; ++x) {
-        for (int y=0; y<3; ++y) {
-            // Fill squares
-            squares[x][y] = m_state->GetValue(formatState(x, y));
-            // Fill my
-            my[x][y] = squares[x][y] == activePlayerSigns;
-            // Update noEmptySquares
-            hasEmptySquares |= squares[x][y] == 0;
-        }
-    }
-
-    // Check horizontal lines
-    for (int y=0; y<3; ++y) {
-        bool lastMoveWin = squares[0][y] == squares[1][y] && 
-            squares[1][y] == squares[2][y] &&
-            squares[0][y] == activePlayerSigns;
-        if (lastMoveWin) {
-            agents()[m_activeAgentIdx]->addReward(1.0);
-            agents()[m_activeAgentIdx ^ 1]->addReward(-1.0);
-            return false;
-        }
-    }
-
-    // Check vertical lines
-    for (int x=0; x<3; ++x) 
+    // Examine game field
+    for (int i=0; i<8; ++i) 
     {
-        bool lastMoveWin = 
-            squares[x][0] == squares[x][1] && 
-            squares[x][1] == squares[x][2] &&
-            squares[x][0] == activePlayerSigns;
+        bool are_all_captured = true;
 
-        if (lastMoveWin) 
+        for (int k=0; k<3; ++k)
         {
-            agents()[m_activeAgentIdx]->addReward(1.0);
-            agents()[m_activeAgentIdx ^ 1]->addReward(-1.0);
+            are_all_captured = 
+                are_all_captured && 
+                state_[WINING_POSITIONS[i][k]] == my_sign;
+
+            has_empty_squares = has_empty_squares || state_[WINING_POSITIONS[k][i]] == 0;
+        }
+
+        if (are_all_captured)
+        {
+            agents()[active_agent_idx_]->add_reward(1.0);
+            agents()[active_agent_idx_ ^ 1]->add_reward(-1.0);
             return false;
         }
-    }
-
-    // Check diagonal lines
-    bool lastMoveWin = 
-        squares[0][0] == squares[1][1] &&
-        squares[1][1] == squares[2][2] &&
-        squares[0][0] == activePlayerSigns;
-
-    lastMoveWin |= 
-        squares[2][0] == squares[1][1] &&
-        squares[1][1] == squares[0][2] &&
-        squares[2][0] == activePlayerSigns;
-
-    if (lastMoveWin) 
-    {
-        agents()[m_activeAgentIdx]->addReward(1.0);
-        agents()[m_activeAgentIdx ^ 1]->addReward(-1.0);
-        return false;
     }
 
     // Ok now check for draw
-    if (!hasEmptySquares) 
+    if (!has_empty_squares) 
         return false;
 
-    m_activeAgentIdx ^= 1;
+    // Switch active agent
+    active_agent_idx_ ^= 1;
 
     return true;
 }
 
-void CTicTacToe::printState(const shared_ptr<CTicTacToeAction>& action) const
+void tic_tac_toe::print_state(rll_type action) const
 {
     if (episode() % 100) 
         return;
@@ -227,19 +132,20 @@ void CTicTacToe::printState(const shared_ptr<CTicTacToeAction>& action) const
     cout << "Episode: " << episode()
         << " Step: " <<  step() 
         << " Value: " 
-        << agents()[m_activeAgentIdx]->getValue(detail::translate(currentState(), action, m_activeAgentIdx))
+        << agents()[active_agent_idx_]->get_value(state_.clone().get_internal_rep(action))
         << endl;
 
-    for (int x=0; x<3; ++x) {
-        for (int y=0; y<3; ++y) {
-            const char* dest = formatState(x, y);
+    for (int x=0; x<3; ++x) 
+    {
+        for (int y=0; y<3; ++y) 
+        {
             // Fill squares
-            int sign = m_state->GetValue(dest);
+            int sign = state_[3*x + y];
             if (1 == sign) {
                 cout << "X";
             } else if (2 == sign) {
                 cout << "O";
-            } else if (action->x() == x && action->y() == y) {
+            } else if (3*x + y == action) {
                 cout << "M";
             } else {
                 cout << " ";
@@ -253,18 +159,12 @@ void CTicTacToe::printState(const shared_ptr<CTicTacToeAction>& action) const
 
 int main() 
 {
-    CConfigPtr ptrConfig(new CConfig);
-    ptrConfig->m_alpha = 0.1;
-    ptrConfig->m_lambda = 0.5;
-    ptrConfig->m_gamma = 1.0;
-    ptrConfig->m_accumulating = false;
-    ptrConfig->m_hidden = 8;
-    ptrConfig->m_vfMin = -1.0;
-    ptrConfig->m_vfMax = 1.0;
-    ptrConfig->m_policy = CConfig::EPSILON_GREEDY;
+    CConfigPtr config(new CConfig);
+    config->m_gamma = 1.0;
+    config->m_accumulating = false;
 
-    CTicTacToe game;
-    CLambdaSarsa m(&game, ptrConfig);
+    tic_tac_toe game;
+    method_action_onpolicy m(&game, config);
 
     m.run(100000);
 }

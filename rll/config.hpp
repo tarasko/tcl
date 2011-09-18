@@ -20,7 +20,7 @@ struct CConfig
         m_lambda(0.5),
         m_gamma(1.0),
         m_accumulating(false),
-        m_policy(EPSILON_GREEDY),
+        policy_(EPSILON_GREEDY),
         m_epsilon(0.05),
         m_hidden(10),
         m_vfMin(-1.0),
@@ -39,7 +39,7 @@ struct CConfig
     /** @brief Should use accumulationg trace or replacing */
     bool m_accumulating;
     /** @brief Policy type */
-    POLICY_TYPE m_policy;
+    POLICY_TYPE policy_;
     /** @brief Epsilon constatn for epsilon-greedy policy */
     double m_epsilon;
 

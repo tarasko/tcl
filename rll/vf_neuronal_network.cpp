@@ -1,6 +1,5 @@
-#include "neuronal_network.hpp"
+#include "vf_neuronal_network.hpp"
 
-#include "detail/logger.hpp"
 #include "detail/fann/doublefann.h"
 
 #include <iterator>
@@ -13,46 +12,46 @@ namespace tcl { namespace rll {
 
 /// @todo Investigate errors with FANN_LINEAR in output layer.
 /// @todo Do not make copy of data in case of int
-class CNeuronalNetwork::CFannWrapper 
+class vf_neuronal_network::fann_wrapper 
 {
 public:
-    CFannWrapper(int i_input, CConfigPtr i_ptrConfig) 
+    fann_wrapper(int i_input, CConfigPtr config) 
     {
-        m_pFann = fann_create_standard(3, i_input, i_ptrConfig->m_hidden, 1);
-        assert(m_pFann);
-        fann_set_training_algorithm(m_pFann, FANN_TRAIN_INCREMENTAL);
-        fann_set_activation_function_output(m_pFann, FANN_LINEAR);
+        fann_wrapper_ = fann_create_standard(3, i_input, config->m_hidden, 1);
+        assert(fann_wrapper_);
+        fann_set_training_algorithm(fann_wrapper_, FANN_TRAIN_INCREMENTAL);
+        fann_set_activation_function_output(fann_wrapper_, FANN_LINEAR);
         // Calculate center and scale
-        m_min = i_ptrConfig->m_vfMin;
-        m_max = i_ptrConfig->m_vfMax;
+        m_min = config->m_vfMin;
+        m_max = config->m_vfMax;
         m_center = (m_max + m_min) / 2;
         m_scale = 1 / (m_center - m_min);
     }
 
-    ~CFannWrapper() 
+    ~fann_wrapper() 
     {
-        fann_destroy(m_pFann);
+        fann_destroy(fann_wrapper_);
     }
 
     /// @brief Incremental training on examples.
-    void update(const CUpdateList& i_list) 
+    void update(const update_list& lst) 
     {
-        if (i_list.empty()) {
+        if (lst.empty()) {
             return;
         }
 
         // Transform UpdataList to appropriate representation
         typedef vector<pair<vector<fann_type>, fann_type> > CInternalList;
-        CInternalList intData(i_list.size());
-        for (CUpdateList::size_type i=0; i<i_list.size(); ++i) {
+        CInternalList intData(lst.size());
+        for (update_list::size_type i=0; i<lst.size(); ++i) {
             // Copy first member
             std::copy(
-                i_list[i].first->begin()
-              , i_list[i].first->end()
+                lst[i].first->begin()
+              , lst[i].first->end()
               , back_inserter(intData[i].first)
               );
             // Copy second member and make scalling
-            intData[i].second = scaleIn(static_cast<fann_type>(i_list[i].second));
+            intData[i].second = scaleIn(static_cast<fann_type>(lst[i].second));
         }
 
         // Fill train data structure
@@ -66,23 +65,21 @@ public:
         td.output = &output[0];
 
         // And at last set actual pointers
-        for (CUpdateList::size_type i=0; i<i_list.size(); ++i) {
+        for (update_list::size_type i=0; i<lst.size(); ++i) {
             input[i] = &(intData[i].first[0]);
             output[i] = &(intData[i].second);
         }
 
-        g_log.Print(td);
-
-        float mse = fann_train_epoch(m_pFann, &td);
+        float mse = fann_train_epoch(fann_wrapper_, &td);
     }
 
     /// @brief Return value for internal representation of state.
-    virtual double getValue(const CVectorRlltPtr& i_ptrState) {
-        if (i_ptrState->empty()) {
+    virtual double get_value(const vector_rllt_csp& st) {
+        if (st->empty()) {
             return 0.0;
         }
-        vector<fann_type> in(i_ptrState->begin(), i_ptrState->end());
-        return static_cast<double>(scaleOut(*fann_run(m_pFann, &in[0])));
+        vector<fann_type> in(st->begin(), st->end());
+        return static_cast<double>(scaleOut(*fann_run(fann_wrapper_, &in[0])));
     }
 
 private:
@@ -102,41 +99,41 @@ private:
         //return i_val / m_scale + m_center;
     }
 
-    fann*  m_pFann;  //!< FANN neuronal network
+    fann*  fann_wrapper_;  //!< FANN neuronal network
     double m_center; //!< Defines the center beetwen min and max values
     double m_scale;  //!< Defines the scale rate for output values
     double m_min;    //!< Defines minimum possible output value
     double m_max;    //!< Defines maximum possible output value
 };
 
-CNeuronalNetwork::CNeuronalNetwork(const CConfigPtr& i_ptrConfig) 
-    : m_pFann(NULL)
-    , m_ptrConfig(i_ptrConfig) 
+vf_neuronal_network::vf_neuronal_network(const CConfigPtr& config) 
+    : fann_wrapper_(NULL)
+    , config_(config) 
 {
 }
 
-double CNeuronalNetwork::getValue(const CVectorRlltPtr& i_ptrState) {
-    if (i_ptrState->empty()) {
+double vf_neuronal_network::get_value(const vector_rllt_csp& st) {
+    if (st->empty()) {
         return 0.0;
     }
 
-    if (!m_pFann) {
-        m_pFann = new CFannWrapper((int)i_ptrState->size(), m_ptrConfig);
+    if (!fann_wrapper_) {
+        fann_wrapper_ = new fann_wrapper((int)st->size(), config_);
     }
 
-    return m_pFann->getValue(i_ptrState);
+    return fann_wrapper_->get_value(st);
 }
 
-void CNeuronalNetwork::update(const CUpdateList& i_map) {
+void vf_neuronal_network::update(const update_list& i_map) {
     if (i_map.empty()) {
         return;
     }
 
-    if (!m_pFann) {
-        m_pFann = new CFannWrapper((int)i_map[0].first->size(), m_ptrConfig);
+    if (!fann_wrapper_) {
+        fann_wrapper_ = new fann_wrapper((int)i_map[0].first->size(), config_);
     }
 
-    return m_pFann->update(i_map);
+    return fann_wrapper_->update(i_map);
 }
 
 }}

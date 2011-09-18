@@ -2,293 +2,278 @@
 #include "environment.hpp"
 #include "agent.hpp"
 #include "state.hpp"
-#include "action.hpp"
-
-#include "detail/logger.hpp"
-#include "detail/utils.hpp"
 
 #include <functional>
 
 namespace tcl { namespace rll {
 
-CMethodBase::CMethodBase(CEnvBase* pEnv, const CConfigPtr& ptrConfig) 
-    : m_ptrConfig(ptrConfig)
-    , m_policy(ptrConfig) 
-    , m_pEnv(pEnv)
-    , m_episode(0)
-    , m_step(0)
+method_base::method_base(env_base* env, const CConfigPtr& config) 
+    : config_(config)
+    , policy_(config) 
+    , env_(env)
+    , episode_(0)
+    , step_(0)
+{
+    if (!config_) 
+        throw CRLException("config cannot be null");
+}
+
+method_base::~method_base()
 {
 }
 
-CMethodBase::~CMethodBase()
+void method_base::run(unsigned int episodes) 
 {
-}
+    env_->method_ = this;
 
-void CMethodBase::run(unsigned int episodes) 
-{
-    if (!m_ptrConfig) 
-        throw CRLException("m_ptrConfig member cannot be null");
-
-    g_log.Enable(m_ptrConfig->m_enableLog);
-    m_pEnv->m_method = this;
-
-    struct OnScopeExit
+    struct on_scope_exit
     {
-        OnScopeExit(const CMethodBase*& ref) : m_ref(ref) 
+        on_scope_exit(const method_base*& ref) : m_ref(ref) 
         {
         }
-        ~OnScopeExit()
+        ~on_scope_exit()
         {
             m_ref = 0;
-            g_log.Enable(false);
         }
 
     private:
-        const CMethodBase*& m_ref;
+        const method_base*& m_ref;
     }
-    onScopeExit(m_pEnv->m_method);
+    on_scope_exit_obj(env_->method_);
 
-    for (m_episode = 0; m_episode < episodes; ++m_episode)
+    for (episode_ = 0; episode_ < episodes; ++episode_)
     {
-        m_step = 0;
+        step_ = 0;
 
-        // Reset all agents
+        // Reset previous state for all agents
         std::for_each(
-            m_pEnv->agents().begin()
-          , m_pEnv->agents().end()
-          , [](CAgentPtr& agent) -> void
+            env_->agents().begin()
+          , env_->agents().end()
+          , [](agent_sp& agent) -> void
             { 
-                agent->setLastStateWhenWasActive(CStatePtr());
-                agent->setLastActionWhenWasActive(CActionPtr());
+                agent->set_prev_state(vector_rllt_csp());
             }
           );
 
-        runEpisode();    
+        run_episode_impl();    
     }
 }
 
-
-unsigned int CMethodBase::episode() const
+unsigned int method_base::episode() const
 {
-    return m_episode;
+    return episode_;
 }
 
-unsigned int CMethodBase::step() const
+unsigned int method_base::step() const
 {
-    return m_step;
+    return step_;
 }
 
-CStateMethod::CStateMethod(CEnvState* pEnv, const CConfigPtr& ptrConfig) 
-    : CMethodBase(pEnv, ptrConfig)
+method_state::method_state(env_state* env, const CConfigPtr& config) 
+    : method_base(env, config)
 {
 }
 
-void CStateMethod::runEpisode() 
+void method_state::run_episode_impl() 
 {
-    CEnvState* pEnv = static_cast<CEnvState*>(m_pEnv);
+    env_state* env = static_cast<env_state*>(env_);
 
-    pEnv->initEpisode();
-    int activeAgentIdx;     // Current active agent index
+    env->init_episode();
     
     // Repeat for each step in episode
-    // Break when setNextStateAssignRewards return false
-    for(m_step = 0;; ++m_step)
+    // Break when set_next_state_assign_rewards return false
+    for(step_ = 0;; ++step_)
     {
         // Get active agent on this step
-        activeAgentIdx = pEnv->activeAgent();
-        CAgentPtr activeAgent = pEnv->agents()[activeAgentIdx];
+        int      active_agent_idx = env->active_agent();
+        agent_sp active_agent     = env->agents()[active_agent_idx];
 
-        if (!activeAgent->lastStateWhenWasActive()) 
-            activeAgent->setLastStateWhenWasActive(pEnv->currentState());
+        // When agent do it`s first step he don`t know previous state.
+        // Set current state as previous (and initial) for agent.
+        if (!active_agent->prev_state()) 
+            active_agent->set_prev_state(env->current_state().clone().get_internal_rep());
 
         // Get possible next states for current active agent
-        auto nextStates = pEnv->getPossibleNextStates();
-        if (nextStates.empty()) {
+        auto next_states = env->get_possible_next_states();
+        if (next_states.empty())
             throw CRLException("at least must be one possible next state");
-        }
 
-        m_variants.resize(nextStates.size());
-
+        // Get estimate value for each possible new state
+        variants_.resize(next_states.size());
         std::transform(
-            nextStates.begin()
-          , nextStates.end()
-          , m_variants.begin()
-          , [&](const CStatePtr& state) -> std::pair<double, CStatePtr>
+            next_states.begin()
+          , next_states.end()
+          , variants_.begin()
+          , [&](const state_type& state) -> std::pair<double, state_type>
             {
-                double stateValue = activeAgent->getValue(
-                    detail::translate(state, CActionPtr(), activeAgentIdx)
-                  );
-
+                double stateValue = active_agent->get_value(state.get_internal_rep());
                 return std::make_pair(stateValue, state);
             }
           );
 
-        // Sort it
+        // Sort this values because we must pass sorted vector to policy
         std::sort(
-            m_variants.begin()
-          , m_variants.end()
-          , [](CValueStateMap::const_reference r1, CValueStateMap::const_reference r2) -> bool
+            variants_.begin()
+          , variants_.end()
+          , [](value_state_map::const_reference r1, value_state_map::const_reference r2) -> bool
             {
                 return r1.first < r2.first;
             }
           );
 
-        // Select action and therefore next state according policy 
-        CValueStateMap::const_reference policySelection = m_policy.select(m_variants);
-        CValueStateMap::const_reference greedySelection = m_variants.back();
+        // Select next state according policy 
+        value_state_map::const_reference policy_selection = policy_.select(variants_);
+        value_state_map::const_reference greedy_selection = variants_.back();
 
-        // Get reward for agent 
-        if (pEnv->setNextStateAssignRewards(policySelection.second))
+        // Set next state get reward for agent
+        // We need to clone state
+        if (env->set_next_state_assign_rewards(policy_selection.second))
         {
             // Update value function
-            updateValueFunctionImpl(
-                activeAgent
-              , activeAgentIdx
-              , policySelection
-              , activeAgent->releaseReward()
+            update_value_function_impl(
+                active_agent
+              , active_agent_idx
+              , policy_selection.first
+              , active_agent->release_reward()
               );
 
-            // Remember new state for active agent
-            activeAgent->setLastStateWhenWasActive(policySelection.second);
+            // Remember new state as previous for active agent
+            active_agent->set_prev_state(policy_selection.second.get_internal_rep());
         }
         else
             break; // finish loop after we got to terminal state
     }
 
     // Get terminal rewards for all agents
-    CVectorDbl terminalRewards(m_pEnv->agents().size());
+    CVectorDbl terminal_rewards(env_->agents().size());
     std::transform(
-        m_pEnv->agents().begin()
-      , m_pEnv->agents().end()
-      , terminalRewards.begin()
-      , std::mem_fn(&CAgent::releaseReward)
+        env_->agents().begin()
+      , env_->agents().end()
+      , terminal_rewards.begin()
+      , std::mem_fn(&agent::release_reward)
       );
 
     // Update value function for last state for each agent according to terminal rewards
-    auto terminalState = std::make_pair(0.0, CStatePtr());
-    for(size_t agentIdx = 0; agentIdx < terminalRewards.size(); ++agentIdx) 
+    for(size_t agentIdx = 0; agentIdx < terminal_rewards.size(); ++agentIdx) 
     {
-        updateValueFunctionImpl(
-            pEnv->agents()[agentIdx]
+        update_value_function_impl(
+            env->agents()[agentIdx]
           , agentIdx
-          , terminalState
-          , terminalRewards[agentIdx]
+          , 0.0
+          , terminal_rewards[agentIdx]
           );
     }
 }
 
-CActionMethod::CActionMethod(CEnvAction* pEnv, const CConfigPtr& ptrConfig) 
-    : CMethodBase(pEnv, ptrConfig)
+method_action::method_action(env_action* env, const CConfigPtr& config) 
+    : method_base(env, config)
 {
 }
 
-void CActionMethod::runEpisode() 
+void method_action::run_episode_impl() 
 {
-    CEnvAction* pEnv = static_cast<CEnvAction*>(m_pEnv);
+    env_action* env = static_cast<env_action*>(env_);
 
-    pEnv->initEpisode();
-    int activeAgentIdx;       // Current active agent index
+    env->init_episode();
     bool cont = true;
     
     // 1. Get possible actions for active agent.
-    // 2. Select action according policy.
-    // 3. Update value function. We can do this step cause we know Q(t-1) and Q(t) and last reward.
+    // 2. Evaluate all state-action representations, get estimated values for them.
+    // 3. Select state-action according policy.
+    // 4. Update value function. We can do this step cause we know Q(t-1) and Q(t) and last reward.
     // In case of first move we don`t do update.
     // Probably here must be offline and online updates.
-    // 4. Make last selected action, agents can recieve rewards on this step. 
+    // 5. Make last selected action, agents can recieve rewards on this step. 
     // All this rewards are remembered until we will know next state-action pair.
     // On this step environment also can tell that we reached terminal state.
-    // If we are in terminal state go to step 5. Else go to step 1.
-    // 5. Iterate over all agents, pretend that next state-action pair will have value function 0.0
+    // If we are in terminal state go to step 6. Else go to step 1.
+    // 6. Iterate over all agents, pretend that next state-action pair will have value function 0.0
     // Update according to last reward.
 
-    for (m_step = 0; cont; ++m_step)
+    for (step_ = 0; cont; ++step_)
     {
-        // Get active agent
-        activeAgentIdx = m_pEnv->activeAgent();
-        CAgentPtr activeAgent = m_pEnv->agents()[activeAgentIdx];
+        // Get active agent and it index
+        int active_agent_idx = env_->active_agent();
+        agent_sp active_agent = env_->agents()[active_agent_idx];
 
         // 1. Get possible actions for active agent.
-        auto possibleActions = pEnv->getPossibleActions();
-        if (possibleActions.empty()) {
+        auto possible_actions = env->get_possible_actions();
+        if (possible_actions.empty())
             throw CRLException("At least must be one possible next action");
-        }
 
-        CStatePtr currentState = pEnv->currentState();
+        state_type current_state = env->current_state();
 
-        // TODO: This can be done on one time preallocated memory
-        m_variants.resize(possibleActions.size());
+        // 2. Evaluate all state-action representations, get estimated values for them
+        variants_.resize(possible_actions.size());
         std::transform(
-            possibleActions.begin()
-          , possibleActions.end()
-          , m_variants.begin()
-          , [&](const CActionPtr& a) -> std::pair<double, CActionPtr>
+            possible_actions.begin()
+          , possible_actions.end()
+          , variants_.begin()
+          , [&](rll_type a) -> std::pair<double, vector_rllt_csp>
             {
-                double actionValue = activeAgent->getValue(
-                    detail::translate(currentState, a, activeAgentIdx)
-                  );
-
-                return std::make_pair(actionValue, a);
+                auto rep = current_state.clone().get_internal_rep(a);
+                double value = active_agent->get_value(rep);
+                return std::make_pair(value, rep);
             }
           );
 
         // Sort it
         std::sort(
-            m_variants.begin()
-          , m_variants.end()
-          , [](CValueActionMap::const_reference r1, CValueActionMap::const_reference r2) -> bool
+            variants_.begin()
+          , variants_.end()
+          , [](value_action_map::const_reference r1, value_action_map::const_reference r2) -> bool
             {
                 return r1.first < r2.first;
             }
           );
 
-        CValueActionMap::const_reference policySelection = m_policy.select(m_variants);
-        CValueActionMap::const_reference greedySelection = m_variants.back();
+        // 3. Select state-action according policy.
+        value_action_map::const_reference policy_selection = policy_.select(variants_);
+        value_action_map::const_reference greedy_selection = variants_.back();
 
-        // 3. Update value function. We can do this step cause we know Q(t-1) and Q(t) and last reward.
+        // 4. Update value function. We can do this step cause we know Q(t-1) and Q(t) and last reward.
         // In case of first move we don`t do update.
         // Probably here must be offline and online updates.
-        if (activeAgent->lastStateWhenWasActive()) {
-            updateValueFunctionImpl(
-                activeAgent
-              , activeAgentIdx
-              , policySelection
-              , greedySelection
-              , activeAgent->releaseReward()
+        if (active_agent->prev_state()) {
+            update_value_function_impl(
+                active_agent
+              , active_agent_idx
+              , policy_selection
+              , greedy_selection
+              , active_agent->release_reward()
               );
         }
 
-        activeAgent->setLastStateWhenWasActive(currentState->Clone());
-        activeAgent->setLastActionWhenWasActive(policySelection.second);
+        active_agent->set_prev_state(policy_selection.second);
 
-        // 4. Make last selected action, agents can recieve rewards on this step. 
+        // 5. Make last selected action, agents can recieve rewards on this step. 
         // All this rewards are remembered until we will know next state-action pair.
         // On this step environment also can tell that we reached terminal state.
         // If we are in terminal state go to step 5. Else go to step 1.
-        cont = pEnv->doActionAssignRewards(policySelection.second);
+        cont = env->do_action_assign_rewards(policy_selection.second->back());
     }
 
     // Get terminal rewards for all agents
-    CVectorDbl terminalRewards(m_pEnv->agents().size());
+    CVectorDbl terminal_rewards(env_->agents().size());
     std::transform(
-        m_pEnv->agents().begin()
-      , m_pEnv->agents().end()
-      , terminalRewards.begin()
-      , std::mem_fn(&CAgent::releaseReward)
+        env_->agents().begin()
+      , env_->agents().end()
+      , terminal_rewards.begin()
+      , std::mem_fn(&agent::release_reward)
       );
 
-    // 5. Iterate over all agents, pretend that next state-action pair will have value function 0.0
+    // 6. Iterate over all agents, pretend that next state-action pair will have value function 0.0
     // Update according to last reward.
     // Update value function for last state for each agent according to terminal rewards
-    auto terminalAction = std::make_pair(0.0, CActionPtr());
-    for(size_t agentIdx = 0; agentIdx < terminalRewards.size(); ++agentIdx) 
+    auto terminal_action = std::make_pair(0.0, vector_rllt_csp());
+    for(size_t agentIdx = 0; agentIdx < terminal_rewards.size(); ++agentIdx) 
     {
-        updateValueFunctionImpl(
-            pEnv->agents()[agentIdx]
+        update_value_function_impl(
+            env->agents()[agentIdx]
           , agentIdx
-          , terminalAction
-          , terminalAction
-          , terminalRewards[agentIdx]
+          , terminal_action
+          , terminal_action
+          , terminal_rewards[agentIdx]
           );
     }
 }

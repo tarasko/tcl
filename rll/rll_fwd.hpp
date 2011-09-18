@@ -25,30 +25,28 @@ namespace tcl { namespace rll {
 
 typedef std::vector<double> CVectorDbl;
 typedef std::vector<int> CVectorInt;
-typedef std::vector<rll_type> CVectorRllt;
-typedef std::shared_ptr<CVectorRllt> CVectorRlltPtr;
+
+typedef std::vector<rll_type> vector_rllt;
+typedef std::shared_ptr<vector_rllt> vector_rllt_sp;
+typedef std::shared_ptr<const vector_rllt> vector_rllt_csp;
 
 DEFINE_EXCEPTION(CRLException)
 
 struct CConfig;
-class CState;
-class CAction;
-class CEnvBase;
-class CEnvState;
-class CEnvAction;
-class CAgent;
-class CStateMethod;
-class CActionMethod;
+class agent;
+class state;
+class state_with_reserved_action;
+class env_base;
+class env_state;
+class env_action;
+class method_state;
+class method_action;
 class CPolicy;
-class CValueFunction;
+class value_function;
 
 typedef std::shared_ptr<CConfig> CConfigPtr;
-typedef std::shared_ptr<CState> CStatePtr;
-typedef std::shared_ptr<CAction> CActionPtr;
-typedef std::shared_ptr<CAgent> CAgentPtr;
-typedef std::shared_ptr<CStateMethod> CStateMethodPtr;
-typedef std::shared_ptr<CActionMethod> CActionMethodPtr;
+typedef std::shared_ptr<agent> agent_sp;
 typedef std::shared_ptr<CPolicy> CPolicyPtr;
-typedef std::shared_ptr<CValueFunction> CValueFunctionPtr;
+typedef std::shared_ptr<value_function> value_function_sp;
 
 }}

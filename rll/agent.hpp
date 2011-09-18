@@ -3,64 +3,34 @@
 #include "rll_fwd.hpp"
 #include "value_function.hpp"
 
-#include <list>
-#include <memory>
-
 namespace tcl { namespace rll {
 
-/// @brief Helper struct for agents.
-///
-/// Contain various helpful information about agent.
-/// Agent internal state differs from internal state stored in Method.
-/// Additionaly it contains agent index on the bottom.
-class CAgent 
+/// @brief Agent that participate in reinforcement learning. 
+/// Generally you are supposed only to create agents on started and pass them
+/// appropriate value function.
+class agent 
 {
 public:
-	typedef CValueFunction::CUpdateList CUpdateList;
+	typedef value_function::update_list update_list;
 
 public:
-    CAgent(const CValueFunctionPtr& i_ptrFunc);
+    agent(const value_function_sp& func);
 
-    /// @brief Return value for internal state representation.
-    double getValue(const CVectorRlltPtr& state);
-    /// @brief Correct value function according update map.
-    void update(const CUpdateList& i_list);
+    void add_reward(double reward);
+    double release_reward();
 
-    CStatePtr lastStateWhenWasActive() const;
-    void setLastStateWhenWasActive(const CStatePtr& state);
-    CActionPtr lastActionWhenWasActive() const;
-    void setLastActionWhenWasActive(const CActionPtr& action);
+    // All this methods only for internal purposes.
+    double get_value(const vector_rllt_csp& state);
+    void update(const update_list& lst);
 
-    void addReward(double reward);
-    double releaseReward();
+    vector_rllt_csp prev_state() const;
+    void set_prev_state(const vector_rllt_csp& prev_state);
 
 private:
-    CValueFunctionPtr m_ptrFunc;   //!< Value function for agent
-
-    CStatePtr  m_state;
-    CActionPtr m_action;
-
-    double m_reward;
+    value_function_sp func_;       //!< Value function for agent.
+    vector_rllt_csp   prev_state_; //!< Agent previous state when was active.
+    double            reward_;     //!< Accumulated agent rewards since last time he was active.
 };
 
-inline CStatePtr CAgent::lastStateWhenWasActive() const
-{
-    return m_state;
-}
-
-inline void CAgent::setLastStateWhenWasActive(const CStatePtr& state)
-{
-    m_state = state;
-}
-
-inline CActionPtr CAgent::lastActionWhenWasActive() const
-{
-    return m_action;
-}
-
-inline void CAgent::setLastActionWhenWasActive(const CActionPtr& action)
-{
-    m_action = action;
-}
 
 }}

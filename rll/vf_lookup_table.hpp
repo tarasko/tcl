@@ -16,28 +16,29 @@ namespace tcl { namespace rll {
 
 /// @brief Implement value function based on lookup table.
 /// Works only for state (and action) variables which has type int.
-class CLookupTable : public CValueFunction 
+class vf_lookup_table : public value_function 
 {
 public:
-    CLookupTable(double i_init = 0.0) : m_init(i_init) {}
+    vf_lookup_table(double init = 0.0) : init_(init) {}
 
     /// @brief Return value for internal representation of state.
-    virtual double getValue(const CVectorRlltPtr& i_ptrState);
+    virtual double get_value(const vector_rllt_csp& st);
+
     /// @brief Correct value function according update map.
     /// @todo think about checkState for interger values
-    virtual void update(const CUpdateList& i_list);
+    virtual void update(const update_list& lst);
 
 private:
 
     typedef std::unordered_map<
-        CVectorRlltPtr
+        vector_rllt_csp
       , double
-      , detail::EvalVectorRlltPtrHash
-      , detail::IsEqualVectorRlltPtr
-      > CValueMap;
+      , detail::eval_vector_rllt_csp_hash
+      , detail::is_equal_vector_rllt_csp
+      > value_map;
     
-    CValueMap m_values;  //!< Map from data vector to value.
-    double m_init;       //!< Initial value for new states.
+    value_map values_;  //!< Map from data vector to value.
+    double init_;       //!< Initial value for new states.
 };
 
 }}
