@@ -8,18 +8,18 @@ set(detail_fann_src
 set(src_double ${src})
 set(src_int ${src})
 
-list(REMOVE_ITEM src_double 
-	"${CMAKE_CURRENT_SOURCE_DIR}/lookup_table.hpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/lookup_table.cpp")
+list(REMOVE_ITEM src_double
+	"${CMAKE_CURRENT_SOURCE_DIR}/vf_lookup_table.hpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/vf_lookup_table.cpp")
 
 add_definitions(-DFANN_NO_DLL -D_CRT_SECURE_NO_WARNINGS)
 
-add_library(tcl.rll.int STATIC 
+add_library(tcl.rll.int STATIC
 	${src_int}
 	${detail_src}
 	${detail_fann_src})
 
-add_library(tcl.rll.double STATIC 
+add_library(tcl.rll.double STATIC
 	${src_double}
 	${detail_src}
 	${detail_fann_src})

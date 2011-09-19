@@ -4,12 +4,12 @@
 
 namespace tcl { namespace rll {
 
-namespace detail { class method_base; }
+class method_base;
 
 /// @brief Environment base class.
 /// Application must inherit one of env_state or env_action and override virtuals.
 /// During construction you have to create agents and push them to agents vector.
-class env_base 
+class env_base
 {
     friend class method_base;
 
@@ -25,15 +25,15 @@ public:
 
     /// @brief Must return current active agent index.
     virtual size_t active_agent() const = 0;
-    
+
 private:
     std::vector<agent_sp> agents_; //!< Agents vector
-    const method_base*     method_; //!< Backref to method that works on environment
+    const method_base*    method_; //!< Backref to method that works on environment
 };
 
 /// @brief Environment for state value function.
 /// @copy env_base
-class env_state : public env_base 
+class env_state : public env_base
 {
 public:
     typedef state state_type;
