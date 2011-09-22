@@ -4,18 +4,20 @@
 #include "state.hpp"
 
 #include <functional>
+#include <algorithm>
 
 namespace tcl { namespace rll {
 
-method_base::method_base(env_base* env, const CConfigPtr& config) 
+method_base::method_base(env_base* env, detail::policy* policy, const CConfigPtr& config) 
     : config_(config)
-    , policy_(config) 
+    , policy_(policy) 
     , env_(env)
     , episode_(0)
     , step_(0)
 {
-    if (!config_) 
-        throw CRLException("config cannot be null");
+    assert(env && "Environment cannot be null");
+    assert(pol && "Policy cannot be null");
+    assert(config && "Config cannot be null");
 }
 
 method_base::~method_base()
@@ -26,22 +28,7 @@ void method_base::run(unsigned int episodes)
 {
     env_->method_ = this;
 
-    struct on_scope_exit
-    {
-        on_scope_exit(const method_base*& ref) : m_ref(ref) 
-        {
-        }
-        ~on_scope_exit()
-        {
-            m_ref = 0;
-        }
-
-    private:
-        const method_base*& m_ref;
-    }
-    on_scope_exit_obj(env_->method_);
-
-    for (episode_ = 0; episode_ < episodes; ++episode_)
+    for (episode_ = 0; episode_ < episodes; ++episode_) try
     {
         step_ = 0;
 
@@ -57,6 +44,13 @@ void method_base::run(unsigned int episodes)
 
         run_episode_impl();    
     }
+    catch(...)
+    {
+        env_->method_ = 0;
+        throw;
+    }
+
+    env_->method_ = 0;
 }
 
 unsigned int method_base::episode() const
@@ -69,8 +63,8 @@ unsigned int method_base::step() const
     return step_;
 }
 
-method_state::method_state(env_state* env, const CConfigPtr& config) 
-    : method_base(env, config)
+method_state::method_state(env_state* env, detail::policy* policy, const CConfigPtr& config) 
+    : method_base(env, policy, config)
 {
 }
 
@@ -104,10 +98,11 @@ void method_state::run_episode_impl()
             next_states.begin()
           , next_states.end()
           , variants_.begin()
-          , [&](const state_type& state) -> std::pair<double, state_type>
+          , [&](const state_type& state) -> std::pair<double, vector_rllt_sp>
             {
-                double stateValue = active_agent->get_value(state.get_internal_rep());
-                return std::make_pair(stateValue, state);
+                vector_rllt_sp rep = state.get_internal_rep();
+                double stateValue = active_agent->get_value(rep);
+                return std::make_pair(stateValue, rep);
             }
           );
 
@@ -122,12 +117,12 @@ void method_state::run_episode_impl()
           );
 
         // Select next state according policy 
-        value_state_map::const_reference policy_selection = policy_.select(variants_);
+        value_state_map::const_reference policy_selection = policy_->select(variants_);
         value_state_map::const_reference greedy_selection = variants_.back();
 
         // Set next state get reward for agent
         // We need to clone state
-        if (env->set_next_state_assign_rewards(policy_selection.second))
+        if (env->set_next_state_assign_rewards(state(policy_selection.second)))
         {
             // Update value function
             update_value_function_impl(
@@ -138,14 +133,14 @@ void method_state::run_episode_impl()
               );
 
             // Remember new state as previous for active agent
-            active_agent->set_prev_state(policy_selection.second.get_internal_rep());
+            active_agent->set_prev_state(policy_selection.second);
         }
         else
             break; // finish loop after we got to terminal state
     }
 
     // Get terminal rewards for all agents
-    CVectorDbl terminal_rewards(env_->agents().size());
+    vector_dbl terminal_rewards(env_->agents().size());
     std::transform(
         env_->agents().begin()
       , env_->agents().end()
@@ -165,8 +160,8 @@ void method_state::run_episode_impl()
     }
 }
 
-method_action::method_action(env_action* env, const CConfigPtr& config) 
-    : method_base(env, config)
+method_action::method_action(env_action* env, detail::policy* policy, const CConfigPtr& config) 
+    : method_base(env, policy, config)
 {
 }
 
@@ -228,7 +223,7 @@ void method_action::run_episode_impl()
           );
 
         // 3. Select state-action according policy.
-        value_action_map::const_reference policy_selection = policy_.select(variants_);
+        value_action_map::const_reference policy_selection = policy_->select(variants_);
         value_action_map::const_reference greedy_selection = variants_.back();
 
         // 4. Update value function. We can do this step cause we know Q(t-1) and Q(t) and last reward.
@@ -254,7 +249,7 @@ void method_action::run_episode_impl()
     }
 
     // Get terminal rewards for all agents
-    CVectorDbl terminal_rewards(env_->agents().size());
+    vector_dbl terminal_rewards(env_->agents().size());
     std::transform(
         env_->agents().begin()
       , env_->agents().end()

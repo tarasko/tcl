@@ -2,6 +2,8 @@
 
 #include "rll_fwd.hpp"
 
+#include <cassert>
+
 namespace tcl { namespace rll {
 
 /// @brief Represent agent state.
@@ -15,28 +17,37 @@ namespace tcl { namespace rll {
 class state 
 {
 public:
-    state() {}
+    /// @brief Construct empty state.
+    /// @todo Currently it needs only to fit to std::pair. Should be removed
+    state();
 
     /// @brief Construct state with specified number of signals
     state(size_t signals_num);
 
-    // Accessors
+    /// @brief Construct state from internal state representation.
+    /// Doesn`t perform deep copy
+    state(const vector_rllt_sp& signals);
+
+    /// @name State signal accessors
+    /// @{
     const rll_type& operator[](size_t idx) const;
     rll_type& operator[](size_t idx);
+    /// @}
 
     /// @brief Return number of state signals.
     size_t signals_num() const;
     
-    /// @brief Return internal representation for state    
+    /// @name Return internal representation for state    
+    ///@{
     vector_rllt_csp get_internal_rep() const;
+    vector_rllt_sp get_internal_rep();
+    ///@}
 
     /// @brief Spawn new state by makeing a deep copy of current one.
     state clone() const;
 
 private:
     friend bool operator==(const state& f, const state& s);
-
-    state(const vector_rllt_sp& signals);
 
 private:
     vector_rllt_sp signals_;  //!< Signals
@@ -47,7 +58,7 @@ private:
 class state_with_reserved_action
 {
 public:
-    state_with_reserved_action() {}
+    state_with_reserved_action();
 
     /// @brief Construct state with specified number of signals
     state_with_reserved_action(size_t signals_num);
@@ -60,7 +71,8 @@ public:
     size_t signals_num() const;
     
     /// @brief Return internal representation for state.
-    vector_rllt_csp get_internal_rep(rll_type action);
+    vector_rllt_csp get_internal_rep(rll_type action) const;
+    vector_rllt_sp get_internal_rep(rll_type action);
 
     /// @brief Spawn new state by makeing a deep copy of current one.
     state_with_reserved_action clone() const;
@@ -76,5 +88,98 @@ private:
 private:
     vector_rllt_sp signals_;  //!< Signals
 };
+
+// class state
+
+inline state::state()
+{
+}
+
+inline state::state(size_t signals_num)
+    : signals_(std::make_shared<vector_rllt>(signals_num))
+{
+}
+
+inline state::state(const vector_rllt_sp& signals)
+    : signals_(signals)
+{
+}
+
+inline const rll_type& state::operator[](size_t idx) const
+{
+    return signals_->operator[](idx);
+}
+
+inline rll_type& state::operator[](size_t idx)
+{
+    return signals_->operator[](idx);
+}
+
+inline size_t state::signals_num() const
+{
+    return signals_->size();
+}
+
+inline vector_rllt_csp state::get_internal_rep() const
+{
+    return signals_;
+}
+
+inline vector_rllt_sp state::get_internal_rep() 
+{
+    return signals_;
+}
+
+inline state state::clone() const
+{
+    vector_rllt_sp signals = std::make_shared<vector_rllt>(*signals_);
+    return state(signals);
+}
+
+// class state_with_reserved_action
+
+state_with_reserved_action::state_with_reserved_action()
+{
+}
+
+inline state_with_reserved_action::state_with_reserved_action(size_t signals_num)
+    : signals_(std::make_shared<vector_rllt>(signals_num + 1))
+{
+}
+
+inline const rll_type& state_with_reserved_action::operator[](size_t idx) const
+{
+    assert(idx < signals_->size() - 1);
+    return signals_->operator[](idx);
+}
+
+inline rll_type& state_with_reserved_action::operator[](size_t idx)
+{
+    assert(idx < signals_->size() - 1);
+    return signals_->operator[](idx);
+}
+
+/// @brief Return number of state signals
+inline size_t state_with_reserved_action::signals_num() const
+{
+    return signals_->size() - 1;
+}
+
+inline vector_rllt_csp state_with_reserved_action::get_internal_rep(rll_type action) const
+{
+    signals_->back() = action;
+    return signals_;
+}
+
+inline state_with_reserved_action state_with_reserved_action::clone() const
+{
+    vector_rllt_sp signals = std::make_shared<vector_rllt>(*signals_);
+    return state_with_reserved_action(signals);
+}
+
+inline state_with_reserved_action::state_with_reserved_action(const vector_rllt_sp& signals)
+    : signals_(signals)
+{
+}
 
 }}

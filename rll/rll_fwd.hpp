@@ -23,9 +23,7 @@ struct _className : std::runtime_error                                        \
 
 namespace tcl { namespace rll {
 
-typedef std::vector<double> CVectorDbl;
-typedef std::vector<int> CVectorInt;
-
+typedef std::vector<double> vector_dbl;
 typedef std::vector<rll_type> vector_rllt;
 typedef std::shared_ptr<vector_rllt> vector_rllt_sp;
 typedef std::shared_ptr<const vector_rllt> vector_rllt_csp;
@@ -41,12 +39,10 @@ class env_state;
 class env_action;
 class method_state;
 class method_action;
-class CPolicy;
 class value_function;
 
 typedef std::shared_ptr<CConfig> CConfigPtr;
 typedef std::shared_ptr<agent> agent_sp;
-typedef std::shared_ptr<CPolicy> CPolicyPtr;
 typedef std::shared_ptr<value_function> value_function_sp;
 
 }}

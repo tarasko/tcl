@@ -16,7 +16,7 @@ namespace tcl { namespace rll {
 class method_base 
 {
 public:
-    method_base(env_base* env, const CConfigPtr& config);
+    method_base(env_base* env, detail::policy* policy, const CConfigPtr& config);
     virtual ~method_base();
 
     /// @brief Run training loop.
@@ -31,7 +31,7 @@ protected:
     virtual void run_episode_impl() = 0;  
 
     CConfigPtr      config_;     //!< Config information
-    detail::CPolicy policy_;     //!< Policy
+    detail::policy* policy_;     //!< Policy
     env_base*       env_;        //!< Environment
 
     unsigned int    episode_;    //!< Current episode
@@ -44,7 +44,7 @@ class method_state : public method_base
 public:
     typedef state state_type;
 
-    method_state(env_state* env, const CConfigPtr& config);
+    method_state(env_state* env, detail::policy* policy, const CConfigPtr& config);
 
 protected:
     /// @brief Update value function for specific agent with new reward
@@ -64,7 +64,7 @@ protected:
     virtual void run_episode_impl();
 
 private:
-    typedef std::vector<std::pair<double, state_type> > value_state_map;
+    typedef detail::policy::variants value_state_map;
 
     /// Used internally by run_episode_impl
     /// Makeing this as member helps to avoid allocations for next 
@@ -78,7 +78,7 @@ class method_action : public method_base
 public:
     typedef state_with_reserved_action state_type;
 
-    method_action(env_action* env, const CConfigPtr& config);
+    method_action(env_action* env, detail::policy* policy, const CConfigPtr& config);
 
 protected:
     /// @brief Update value function for specific agent with new reward
@@ -94,7 +94,7 @@ protected:
     virtual void run_episode_impl();
 
 private:
-    typedef std::vector<std::pair<double, vector_rllt_csp> > value_action_map;
+    typedef detail::policy::variants value_action_map;
 
     /// Used internally by run_episode_impl
     /// Makeing this as member helps to avoid allocations for next 
