@@ -144,7 +144,7 @@ inline bool operator==(const state& f, const state& s)
 
 // class state_with_reserved_action
 
-state_with_reserved_action::state_with_reserved_action()
+inline state_with_reserved_action::state_with_reserved_action()
 {
 }
 
@@ -172,6 +172,12 @@ inline size_t state_with_reserved_action::signals_num() const
 }
 
 inline vector_rllt_csp state_with_reserved_action::get_internal_rep(rll_type action) const
+{
+    signals_->back() = action;
+    return signals_;
+}
+
+inline vector_rllt_sp state_with_reserved_action::get_internal_rep(rll_type action)
 {
     signals_->back() = action;
     return signals_;

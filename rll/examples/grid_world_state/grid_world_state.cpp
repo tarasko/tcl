@@ -1,10 +1,6 @@
 // GridWorldState.cpp : Defines the entry point for the console application.
 //
-#include <tcl/rll/lambda_method.hpp>
-#include <tcl/rll/environment.hpp>
-#include <tcl/rll/config.hpp>
-#include <tcl/rll/vf_lookup_table.hpp>
-#include <tcl/rll/agent.hpp>
+#include <tcl/rll/rll.hpp>
 
 #include <vector>
 #include <iostream>
@@ -164,12 +160,11 @@ int grid_world::apply_col_bounds(int i_col)
 int main(int argc, char* argv[]) 
 {
     CConfigPtr config(new CConfig);
-    config->m_enableLog = false;
     config->m_gamma = 1.0;
-    config->m_epsilon = 0.1;
 
     grid_world gw;
-    method_state_onpolicy m(&gw, config);
+    policy_egreedy pol;
+    method_state_onpolicy m(&gw, &pol, config);
 
     m.run(5000);
     gw.print_value_func();

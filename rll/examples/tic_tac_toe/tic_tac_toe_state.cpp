@@ -163,13 +163,10 @@ int main()
     config->m_lambda = 0.5;
     config->m_gamma = 1.0;
     config->m_accumulating = false;
-    config->m_hidden = 8;
-    config->m_vfMin = -1.0;
-    config->m_vfMax = 1.0;
-    config->policy_ = CConfig::EPSILON_GREEDY;
 
     tic_tac_toe game;
-    method_state_onpolicy m(&game, config);
+    policy_egreedy pol(0.1);
+    method_state_onpolicy m(&game, &pol, config);
 
     m.run(100000);
 }

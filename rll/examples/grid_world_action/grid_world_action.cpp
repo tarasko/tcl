@@ -1,11 +1,7 @@
 // GridWorldAction.cpp : Defines the entry point for the console application.
 //
 
-#include <tcl/rll/lambda_method.hpp>
-#include <tcl/rll/environment.hpp>
-#include <tcl/rll/config.hpp>
-#include <tcl/rll/vf_lookup_table.hpp>
-#include <tcl/rll/agent.hpp>
+#include <tcl/rll/rll.hpp>
 
 #include <vector>
 #include <iostream>
@@ -141,12 +137,12 @@ bool grid_world::do_action_assign_rewards(rll_type action)
 int main(int argc, char* argv[]) 
 {
     CConfigPtr config(new CConfig);
-    config->m_enableLog = false;
     config->m_gamma = 1.0;
     config->m_accumulating = false;
 
     grid_world gw;
-    method_action_onpolicy m(&gw, config);
+    policy_egreedy pol;
+    method_action_onpolicy m(&gw, &pol, config);
 
     m.run(2000);
     return 0;

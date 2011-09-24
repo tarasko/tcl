@@ -18,8 +18,7 @@ public:
     /// @brief Return value for internal representation of state.
     virtual double get_value(const vector_rllt_csp& st) = 0;
 
-    /// @brief Correct value function according update list
-    /// Each entry represent 
+    /// @brief Correct value function according update list.
     virtual void update(const update_list& lst) = 0;
 };
 

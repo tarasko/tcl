@@ -1,5 +1,4 @@
 #include <tcl/rll/rll.hpp>
-#include <tcl/rll/detail/utils.hpp>
 
 #include <vector>
 #include <fstream>
@@ -164,7 +163,9 @@ int main()
     config->m_accumulating = false;
 
     tic_tac_toe game;
-    method_action_onpolicy m(&game, config);
+    policy_egreedy pol;
+
+    method_action_onpolicy m(&game, &pol, config);
 
     m.run(100000);
 }
