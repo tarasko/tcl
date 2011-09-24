@@ -1,6 +1,6 @@
-#include "vf_neuronal_network.hpp"
+#include "neuronal_network.hpp"
 
-#include "detail/fann/doublefann.h"
+#include "../detail/fann/doublefann.h"
 
 #include <iterator>
 #include <algorithm>
@@ -8,11 +8,11 @@
 
 using namespace std;
 
-namespace tcl { namespace rll {
+namespace tcl { namespace rll { namespace value_function {
 
 /// @todo Do not perform copy of elements for rll double.
 
-vf_neuronal_network::vf_neuronal_network(
+neuronal_network::neuronal_network(
     unsigned int hidden
   , double min_val
   , double max_val
@@ -26,12 +26,12 @@ vf_neuronal_network::vf_neuronal_network(
     scale_ = 1 / (center_ - min_);
 }
 
-vf_neuronal_network::~vf_neuronal_network()
+neuronal_network::~neuronal_network()
 {
     fann_destroy(fann_);
 }
 
-double vf_neuronal_network::get_value(const vector_rllt_csp& st) 
+double neuronal_network::get_value(const vector_rllt_csp& st) 
 {
     assert(!st.empty());
 
@@ -43,7 +43,7 @@ double vf_neuronal_network::get_value(const vector_rllt_csp& st)
     return static_cast<double>(scale_out(*fann_run(fann_, &in[0])));
 }
 
-void vf_neuronal_network::update(const update_list& ul) 
+void neuronal_network::update(const update_list& ul) 
 {
     assert(!ul.empty());
 
@@ -88,7 +88,7 @@ void vf_neuronal_network::update(const update_list& ul)
     float mse = fann_train_epoch(fann_, &td);
 }
 
-fann* vf_neuronal_network::create_nn(size_t input_size)
+fann* neuronal_network::create_nn(size_t input_size)
 {
     fann_ = fann_create_standard(3, input_size, hidden_, 1);
     if (!fann_)
@@ -100,16 +100,17 @@ fann* vf_neuronal_network::create_nn(size_t input_size)
     return fann_;
 }
 
-double vf_neuronal_network::scale_in(double val)
+double neuronal_network::scale_in(double val)
 {
     val = max(val, min_);
     val = min(val, max_);
     return (val - center_) * scale_;
 }
 
-double vf_neuronal_network::scale_out(double val)
+double neuronal_network::scale_out(double val)
 {
     return val / scale_ + center_;
 }
 
-}}
+}}}
+

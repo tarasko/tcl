@@ -8,7 +8,7 @@
 
 namespace tcl { namespace rll {
 
-method_base::method_base(env_base* env, detail::policy* policy, const CConfigPtr& config) 
+method_base::method_base(env_base* env, policy::iface* policy, const CConfigPtr& config) 
     : config_(config)
     , policy_(policy) 
     , env_(env)
@@ -63,7 +63,7 @@ unsigned int method_base::step() const
     return step_;
 }
 
-method_state::method_state(env_state* env, detail::policy* policy, const CConfigPtr& config) 
+method_state::method_state(env_state* env, policy::iface* policy, const CConfigPtr& config) 
     : method_base(env, policy, config)
 {
 }
@@ -160,7 +160,7 @@ void method_state::run_episode_impl()
     }
 }
 
-method_action::method_action(env_action* env, detail::policy* policy, const CConfigPtr& config) 
+method_action::method_action(env_action* env, policy::iface* policy, const CConfigPtr& config) 
     : method_base(env, policy, config)
 {
 }

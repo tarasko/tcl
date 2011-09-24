@@ -24,8 +24,9 @@ private:
     void print_state(rll_type action) const;
 
 private:
-    size_t     active_agent_idx_;
+    size_t active_agent_idx_;
     state_type state_;
+    value_function::lookup_table vf_;
 };
 
 const int tic_tac_toe::WINING_POSITIONS[8][3] = {
@@ -43,9 +44,8 @@ tic_tac_toe::tic_tac_toe()
     : state_(9)
 {
     // Create value function and method
-    value_function_sp ptrFunc = make_shared<vf_lookup_table>();
-    agent_sp XPlayer = make_shared<agent>(ptrFunc);
-    agent_sp OPlayer = make_shared<agent>(ptrFunc);
+    agent_sp XPlayer = make_shared<agent>(&vf_);
+    agent_sp OPlayer = make_shared<agent>(&vf_);
     agents().push_back(XPlayer);
     agents().push_back(OPlayer);
 }
@@ -163,7 +163,7 @@ int main()
     config->m_accumulating = false;
 
     tic_tac_toe game;
-    policy_egreedy pol;
+    policy::egreedy pol(0.1);
 
     method_action_onpolicy m(&game, &pol, config);
 

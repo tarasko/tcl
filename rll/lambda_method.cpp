@@ -79,7 +79,7 @@ void onpolicy_lambda_updater<Base>::run_episode_impl()
     Base::run_episode_impl();
 }
 
-method_state_onpolicy::method_state_onpolicy(env_state* env, detail::policy* policy, const CConfigPtr& config)
+method_state_onpolicy::method_state_onpolicy(env_state* env, policy::iface* policy, const CConfigPtr& config)
     : onpolicy_lambda_updater<method_state>(env, policy, config)
 {
 }
@@ -100,7 +100,7 @@ void method_state_onpolicy::update_value_function_impl(
       );
 }
 
-method_action_onpolicy::method_action_onpolicy(env_action* env, detail::policy* policy, const CConfigPtr& config)
+method_action_onpolicy::method_action_onpolicy(env_action* env, policy::iface* policy, const CConfigPtr& config)
     : onpolicy_lambda_updater<method_action>(env, policy, config)
 {
 }

@@ -1,21 +1,21 @@
 #pragma once
 
-#include "value_function.hpp"
+#include "iface.hpp"
 
 struct fann;
 
-namespace tcl { namespace rll {
+namespace tcl { namespace rll { namespace value_function {
 
 /// @brief Implements value fucntion based on neuronal network.
-class vf_neuronal_network : public value_function 
+class neuronal_network : public iface 
 {
 public:
-    vf_neuronal_network(
+    neuronal_network(
         unsigned int hidden
       , double min_val = -1.0
       , double max_val = 1.0
       );
-    ~vf_neuronal_network();
+    ~neuronal_network();
 
     /// @brief Return value for internal representation of state.
     virtual double get_value(const vector_rllt_csp& st);
@@ -40,4 +40,5 @@ private:
 
 };
 
-}}
+}}}
+

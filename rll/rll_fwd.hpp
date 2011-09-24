@@ -39,10 +39,20 @@ class env_state;
 class env_action;
 class method_state;
 class method_action;
-class value_function;
+
+namespace policy {
+class iface;
+class greedy;
+class egreedy;
+}
+
+namespace value_function {
+class iface;
+class lookup_table;
+class neuronal_network;
+}
 
 typedef std::shared_ptr<CConfig> CConfigPtr;
 typedef std::shared_ptr<agent> agent_sp;
-typedef std::shared_ptr<value_function> value_function_sp;
 
 }}

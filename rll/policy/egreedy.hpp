@@ -1,21 +1,22 @@
 #pragma once
 
-#include "policy_greedy.hpp"
+#include "greedy.hpp"
 
-namespace tcl { namespace rll {
+namespace tcl { namespace rll { namespace policy {
 
 /// @brief Epsilon greedy policy.
 /// This policy allows to do exploration and explotation simultaniosly.
 /// In most cases it will choose 
-class policy_egreedy : public policy_greedy
+class egreedy : public iface
 {
 public:
-    policy_egreedy(double epsilon = 0.05);
+    egreedy(double epsilon = 0.05);
 
     virtual const selection& select(const variants& sorted_variants);
 
 private:
+    greedy greedy_;
     double epsilon_;
 };
 
-}}
+}}}

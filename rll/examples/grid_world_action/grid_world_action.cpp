@@ -49,6 +49,7 @@ private:
 
     vector<int> m_wind;
     state_type state_;
+    value_function::lookup_table vf_;
 };
 
 grid_world::action grid_world::ACTIONS[] = {
@@ -64,8 +65,7 @@ grid_world::grid_world(void)
     , state_(2)
 {
     // Create value function and agent
-    value_function_sp ptrFunc = make_shared<vf_lookup_table>();
-    agents().push_back(make_shared<agent>(ptrFunc));
+    agents().push_back(make_shared<agent>(&vf_));
 
     // Init wind
     m_wind[3] = 1;
@@ -141,7 +141,7 @@ int main(int argc, char* argv[])
     config->m_accumulating = false;
 
     grid_world gw;
-    policy_egreedy pol;
+    policy::egreedy pol;
     method_action_onpolicy m(&gw, &pol, config);
 
     m.run(2000);

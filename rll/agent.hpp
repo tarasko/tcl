@@ -1,7 +1,7 @@
 #pragma once
 
 #include "rll_fwd.hpp"
-#include "value_function.hpp"
+#include "value_function/iface.hpp"
 
 #include <cassert>
 
@@ -13,10 +13,10 @@ namespace tcl { namespace rll {
 class agent 
 {
 public:
-	typedef value_function::update_list update_list;
+	typedef value_function::iface::update_list update_list;
 
 public:
-    agent(const value_function_sp& func);
+    agent(value_function::iface* func);
 
     void add_reward(double reward);
     double release_reward();
@@ -29,12 +29,12 @@ public:
     void set_prev_state(const vector_rllt_csp& prev_state);
 
 private:
-    value_function_sp func_;       //!< Value function for agent.
-    vector_rllt_csp   prev_state_; //!< Agent previous state when was active.
-    double            reward_;     //!< Accumulated agent rewards since last time he was active.
+    value_function::iface* func_;  //!< Value function for agent.
+    vector_rllt_csp prev_state_;   //!< Agent previous state when was active.
+    double reward_;                //!< Accumulated agent rewards since last time he was active.
 };
 
-inline agent::agent(const value_function_sp& func) 
+inline agent::agent(value_function::iface* func) 
     : func_(func)
     , reward_(0.0)
 {

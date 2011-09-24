@@ -5,9 +5,9 @@
 #include "environment.hpp"
 #include "lambda_method.hpp"
 #include "state.hpp"
-#include "policy_greedy.hpp"
-#include "policy_egreedy.hpp"
+#include "policy/greedy.hpp"
+#include "policy/egreedy.hpp"
 #if defined(TCL_RLL_INT)
-#include "vf_lookup_table.hpp"
+#include "value_function/lookup_table.hpp"
 #endif
-#include "vf_neuronal_network.hpp"
+#include "value_function/neuronal_network.hpp"

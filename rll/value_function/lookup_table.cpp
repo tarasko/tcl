@@ -1,10 +1,12 @@
-#include "vf_lookup_table.hpp"
+#include "lookup_table.hpp"
+
+#include <algorithm>
 
 using namespace std;
 
-namespace tcl { namespace rll {
+namespace tcl { namespace rll { namespace value_function {
 
-double vf_lookup_table::get_value(const vector_rllt_csp& st) 
+double lookup_table::get_value(const vector_rllt_csp& st) 
 {
     value_map::iterator i = values_.find(st);
     if (i != values_.end()) 
@@ -16,7 +18,7 @@ double vf_lookup_table::get_value(const vector_rllt_csp& st)
     }
 }
 
-void vf_lookup_table::update(const update_list& lst) 
+void lookup_table::update(const update_list& lst) 
 {
     std::for_each(lst.begin(), lst.end(), [&](update_list::const_reference r) -> void 
     {
@@ -24,5 +26,6 @@ void vf_lookup_table::update(const update_list& lst)
     });
 }
 
-}}
+}}}
+
 

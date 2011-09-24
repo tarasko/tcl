@@ -1,19 +1,20 @@
 #pragma once
 
-#include "rll_fwd.hpp"
+#include "../rll_fwd.hpp"
+#include "iface.hpp"
 
 #include <utility>
 #include <vector>
 
-namespace tcl { namespace rll {
+namespace tcl { namespace rll { namespace value_function {
 
 /// @brief Interface for value function.
-class value_function 
+class iface 
 {
 public:
     typedef std::vector<std::pair<vector_rllt_csp, double> > update_list;
 
-    virtual ~value_function() {}
+    virtual ~iface() = 0 {}
 
     /// @brief Return value for internal representation of state.
     virtual double get_value(const vector_rllt_csp& st) = 0;
@@ -22,4 +23,4 @@ public:
     virtual void update(const update_list& lst) = 0;
 };
 
-}}
+}}}

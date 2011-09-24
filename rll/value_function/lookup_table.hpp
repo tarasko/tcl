@@ -4,22 +4,20 @@
 #error "Lookup table is only available in integer version of RLL"
 #endif
 
-#include "rll_fwd.hpp"
-#include "value_function.hpp"
+#include "iface.hpp"
 
-#include "detail/utils.hpp"
+#include "../detail/utils.hpp"
 
 #include <unordered_map>
-#include <algorithm>
 
-namespace tcl { namespace rll {
+namespace tcl { namespace rll { namespace value_function {
 
 /// @brief Implement value function based on lookup table.
 /// Works only for state (and action) variables which has type int.
-class vf_lookup_table : public value_function 
+class lookup_table : public iface 
 {
 public:
-    vf_lookup_table(double init = 0.0) : init_(init) {}
+    lookup_table(double init = 0.0);
 
     /// @brief Return value for internal representation of state.
     virtual double get_value(const vector_rllt_csp& st);
@@ -41,4 +39,9 @@ private:
     double init_;       //!< Initial value for new states.
 };
 
-}}
+inline lookup_table::lookup_table(double init) 
+    : init_(init) 
+{
+}
+
+}}}

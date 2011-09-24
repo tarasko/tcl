@@ -1,11 +1,11 @@
-#include "policy_greedy.hpp"
+#include "greedy.hpp"
 
 #include <cassert>
 #include <algorithm>
 
-namespace tcl { namespace rll {
+namespace tcl { namespace rll { namespace policy {
 
-const policy_greedy::selection& policy_greedy::select(const variants& sorted_variants)
+const greedy::selection& greedy::select(const variants& sorted_variants)
 {
     assert(!sorted_variants.empty());
 
@@ -22,7 +22,7 @@ const policy_greedy::selection& policy_greedy::select(const variants& sorted_var
     return select_with_hint(sorted_variants, lb_hint);            
 }
 
-const policy_greedy::selection& policy_greedy::select_with_hint(
+const greedy::selection& greedy::select_with_hint(
     const variants& sorted_variants
     , variants::const_iterator lb_hint
     )
@@ -35,4 +35,5 @@ const policy_greedy::selection& policy_greedy::select_with_hint(
     return sorted_variants[int_dist(gen_)];
 }
 
-}}
+}}}
+
