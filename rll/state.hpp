@@ -3,6 +3,7 @@
 #include "rll_fwd.hpp"
 
 #include <cassert>
+#include <algorithm>
 
 namespace tcl { namespace rll {
 
@@ -136,6 +137,11 @@ inline state state::clone() const
     return state(signals);
 }
 
+inline bool operator==(const state& f, const state& s)
+{
+    return std::equal(f.signals_->begin(), f.signals_->end(), s.signals_->begin());
+}
+
 // class state_with_reserved_action
 
 state_with_reserved_action::state_with_reserved_action()
@@ -180,6 +186,11 @@ inline state_with_reserved_action state_with_reserved_action::clone() const
 inline state_with_reserved_action::state_with_reserved_action(const vector_rllt_sp& signals)
     : signals_(signals)
 {
+}
+
+inline bool operator==(const state_with_reserved_action& f, const state_with_reserved_action& s)
+{
+    return std::equal(f.signals_->begin(), f.signals_->end(), s.signals_->begin());
 }
 
 }}

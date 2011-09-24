@@ -98,7 +98,7 @@ void method_state::run_episode_impl()
             next_states.begin()
           , next_states.end()
           , variants_.begin()
-          , [&](const state_type& state) -> std::pair<double, vector_rllt_sp>
+          , [&](state_type& state) -> std::pair<double, vector_rllt_sp>
             {
                 vector_rllt_sp rep = state.get_internal_rep();
                 double stateValue = active_agent->get_value(rep);
@@ -204,7 +204,7 @@ void method_action::run_episode_impl()
             possible_actions.begin()
           , possible_actions.end()
           , variants_.begin()
-          , [&](rll_type a) -> std::pair<double, vector_rllt_csp>
+          , [&](rll_type a) -> std::pair<double, vector_rllt_sp>
             {
                 auto rep = current_state.clone().get_internal_rep(a);
                 double value = active_agent->get_value(rep);

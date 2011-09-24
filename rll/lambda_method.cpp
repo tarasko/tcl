@@ -1,9 +1,11 @@
 #include "lambda_method.hpp"
 #include "agent.hpp"
 #include "environment.hpp"
+#include "config.hpp"
 
 #include <cassert>
 #include <functional>
+#include <algorithm>
 
 namespace tcl { namespace rll {
 
@@ -77,8 +79,8 @@ void onpolicy_lambda_updater<Base>::run_episode_impl()
     Base::run_episode_impl();
 }
 
-method_state_onpolicy::method_state_onpolicy(env_state* env, const CConfigPtr& config)
-    : onpolicy_lambda_updater<method_state>(env, config)
+method_state_onpolicy::method_state_onpolicy(env_state* env, detail::policy* policy, const CConfigPtr& config)
+    : onpolicy_lambda_updater<method_state>(env, policy, config)
 {
 }
 
@@ -98,8 +100,8 @@ void method_state_onpolicy::update_value_function_impl(
       );
 }
 
-method_action_onpolicy::method_action_onpolicy(env_action* env, const CConfigPtr& config)
-    : onpolicy_lambda_updater<method_action>(env, config)
+method_action_onpolicy::method_action_onpolicy(env_action* env, detail::policy* policy, const CConfigPtr& config)
+    : onpolicy_lambda_updater<method_action>(env, policy, config)
 {
 }
 

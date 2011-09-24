@@ -15,8 +15,8 @@ class onpolicy_lambda_updater : public Base
 {
 public:
     template<typename EnvType> 
-    onpolicy_lambda_updater(EnvType* env, const CConfigPtr& config)
-        : Base(env, config)
+    onpolicy_lambda_updater(EnvType* env, detail::policy* policy, const CConfigPtr& config)
+        : Base(env, policy, config)
         , traces_(env->agents().size())
     {
     }
@@ -60,7 +60,7 @@ class offpolicy_lambda_updater : public Base
 class method_state_onpolicy : public onpolicy_lambda_updater<method_state>
 {
 public:
-    method_state_onpolicy(env_state* env, const CConfigPtr& config);
+    method_state_onpolicy(env_state* env, detail::policy* policy, const CConfigPtr& config);
 
 private:
 	/// @name method_state implementation
@@ -81,7 +81,7 @@ private:
 class method_action_onpolicy : public onpolicy_lambda_updater<method_action> 
 {
 public:
-    method_action_onpolicy(env_action* env, const CConfigPtr& config);
+    method_action_onpolicy(env_action* env, detail::policy* policy, const CConfigPtr& config);
 
 protected:
     /// @brief Update value function for specific agent with new reward

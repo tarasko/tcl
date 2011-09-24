@@ -1,10 +1,9 @@
 #pragma once
 
 #include "rll_fwd.hpp"
+#include "method.hpp"
 
 namespace tcl { namespace rll {
-
-class method_base;
 
 /// @brief Environment base class.
 /// Application must inherit one of env_state or env_action and override virtuals.
@@ -69,5 +68,25 @@ public:
     /// @return True if method should continue with next step, false if we got to terminal state.
     virtual bool do_action_assign_rewards(rll_type action) = 0;
 };
+
+inline std::vector<agent_sp>& env_base::agents()
+{
+    return agents_;
+}
+
+inline const std::vector<agent_sp>& env_base::agents() const
+{
+    return agents_;
+}
+
+inline unsigned int env_base::episode() const
+{
+    return method_->episode();
+}
+
+inline unsigned int env_base::step() const
+{
+    return method_->step();
+}
 
 }}
