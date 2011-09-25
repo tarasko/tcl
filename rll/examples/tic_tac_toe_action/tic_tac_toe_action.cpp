@@ -165,7 +165,7 @@ int main()
     tic_tac_toe game;
     policy::egreedy pol(0.1);
 
-    method_action_onpolicy m(&game, &pol, config);
+    method_action_offpolicy m(&game, &pol, config);
 
-    m.run(100000);
+    m.run(1000000);
 }

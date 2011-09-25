@@ -8,12 +8,6 @@
 namespace tcl { namespace rll {
 
 /// @brief Base class for RL methods.
-///
-/// @todo Every method likes to repeat some operations for one state. Generally 
-/// I mean state value calculation both in SelectNext and Reward methods. Find 
-/// such places and make some kind of cache variables.
-///
-/// @todo Hide policy from include files.
 class method_base 
 {
 public:
