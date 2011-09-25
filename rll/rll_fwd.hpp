@@ -30,15 +30,13 @@ typedef std::shared_ptr<const vector_rllt> vector_rllt_csp;
 
 DEFINE_EXCEPTION(CRLException)
 
-struct CConfig;
+struct config;
 class agent;
 class state;
 class state_with_reserved_action;
 class env_base;
 class env_state;
 class env_action;
-class method_state;
-class method_action;
 
 namespace policy {
 class iface;
@@ -52,7 +50,6 @@ class lookup_table;
 class neuronal_network;
 }
 
-typedef std::shared_ptr<CConfig> CConfigPtr;
 typedef std::shared_ptr<agent> agent_sp;
 
 }}

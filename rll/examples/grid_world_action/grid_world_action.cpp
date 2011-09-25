@@ -136,13 +136,13 @@ bool grid_world::do_action_assign_rewards(rll_type action)
 
 int main(int argc, char* argv[]) 
 {
-    CConfigPtr config(new CConfig);
-    config->m_gamma = 1.0;
-    config->m_accumulating = false;
+    config cfg;
+    cfg.m_gamma = 1.0;
+    cfg.m_accumulating = false;
 
     grid_world gw;
     policy::egreedy pol;
-    method_action_onpolicy m(&gw, &pol, config);
+    onpolicy_action_method m(&gw, &pol, cfg);
 
     m.run(2000);
     return 0;

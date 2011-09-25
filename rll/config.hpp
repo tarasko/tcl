@@ -6,14 +6,14 @@
 
 namespace tcl { namespace rll {
 
-struct CConfig 
+struct config 
 {
-    CConfig() : 
-        m_alpha(0.05),
-        m_lambda(0.5),
-        m_gamma(1.0),
-        m_accumulating(false),
-        m_etEpsilon(0.001)
+    config() 
+        : m_alpha(0.05)
+        , m_lambda(0.5)
+        , m_gamma(1.0)
+        , m_accumulating(false)
+        , m_etEpsilon(0.001)
     {
     }
 

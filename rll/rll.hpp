@@ -3,7 +3,7 @@
 #include "agent.hpp"
 #include "config.hpp"
 #include "environment.hpp"
-#include "lambda_method.hpp"
+#include "method.hpp"
 #include "state.hpp"
 #include "policy/greedy.hpp"
 #include "policy/egreedy.hpp"

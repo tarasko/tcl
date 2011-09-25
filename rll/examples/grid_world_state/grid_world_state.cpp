@@ -159,12 +159,12 @@ int grid_world::apply_col_bounds(int i_col)
 
 int main(int argc, char* argv[]) 
 {
-    CConfigPtr config(new CConfig);
-    config->m_gamma = 1.0;
+    config cfg;
+    cfg.m_gamma = 1.0;
 
     grid_world gw;
     policy::egreedy pol;
-    method_state_offpolicy m(&gw, &pol, config);
+    offpolicy_state_method m(&gw, &pol, cfg);
 
     m.run(15000);
     gw.print_value_func();

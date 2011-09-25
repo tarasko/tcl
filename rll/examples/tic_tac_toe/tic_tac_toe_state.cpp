@@ -158,15 +158,15 @@ void tic_tac_toe::print_state() const
 
 int main() 
 {
-    CConfigPtr config(new CConfig);
-    config->m_alpha = 0.1;
-    config->m_lambda = 0.5;
-    config->m_gamma = 1.0;
-    config->m_accumulating = false;
+    config cfg;
+    cfg.m_alpha = 0.1;
+    cfg.m_lambda = 0.5;
+    cfg.m_gamma = 1.0;
+    cfg.m_accumulating = false;
 
     tic_tac_toe game;
     policy::egreedy pol(0.1);
-    method_state_onpolicy m(&game, &pol, config);
+    onpolicy_state_method m(&game, &pol, cfg);
 
     m.run(100000);
 }

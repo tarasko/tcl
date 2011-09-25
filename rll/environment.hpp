@@ -1,7 +1,7 @@
 #pragma once
 
 #include "rll_fwd.hpp"
-#include "method.hpp"
+#include "detail/method_base.hpp"
 
 namespace tcl { namespace rll {
 
@@ -10,7 +10,7 @@ namespace tcl { namespace rll {
 /// During construction you have to create agents and push them to agents vector.
 class env_base
 {
-    friend class method_base;
+    friend class detail::method_base;
 
 public:
     std::vector<agent_sp>& agents();
@@ -26,8 +26,8 @@ public:
     virtual size_t active_agent() const = 0;
 
 private:
-    std::vector<agent_sp> agents_; //!< Agents vector
-    const method_base*    method_; //!< Backref to method that works on environment
+    std::vector<agent_sp> agents_;      //!< Agents vector
+    const detail::method_base* method_; //!< Backref to method that works on environment
 };
 
 /// @brief Environment for state value function.

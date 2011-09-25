@@ -1,23 +1,24 @@
 #pragma once
 
-#include "method.hpp"
-#include "agent.hpp"
+#include "../agent.hpp"
+#include "../policy/iface.hpp"
 
-#include "detail/utils.hpp"
+#include "method_base.hpp"
+#include "utils.hpp"
 
 #include <unordered_map>
 #include <vector>
 #include <functional>
 #include <utility>
 
-namespace tcl { namespace rll {
+namespace tcl { namespace rll { namespace detail {
 
 template<typename Base, bool Onpolicy>
 class lambda_method : public Base
 {
 public:
     template<typename EnvType> 
-    lambda_method(EnvType* env, policy::iface* policy, const CConfigPtr& config);
+    lambda_method(EnvType* env, policy::iface* policy, const config& config);
 
 private:
     typedef std::unordered_map<
@@ -62,7 +63,7 @@ template<typename EnvType>
 inline lambda_method<Base, Onpolicy>::lambda_method(
     EnvType* env
   , policy::iface* policy
-  , const CConfigPtr& config
+  , const config& config
   )
   : Base(env, policy, config)
   , traces_(env->agents().size())
@@ -79,14 +80,14 @@ inline void lambda_method<Base, Onpolicy>::prepare_update_reduce_traces(
 {
     for (traces_map::iterator i = active_agent_traces.begin(); i != active_agent_traces.end();)
     {
-        double change = Base::config_->m_alpha * temp * i->second;
+        double change = Base::config_.m_alpha * temp * i->second;
         updates.push_back(make_pair(i->first, active_agent->get_value(i->first) + change));
         // Reduce trace
-        // TODO: config_->m_lambda * config_->m_gamma we can do it on startup
-        i->second *= (Base::config_->m_lambda * Base::config_->m_gamma);
+        // TODO: config_.m_lambda * config_.m_gamma we can do it on startup
+        i->second *= (Base::config_.m_lambda * Base::config_.m_gamma);
 
-        // Erase traces that become less then config_->m_etEpsilon
-        if (i->second < Base::config_->m_etEpsilon)
+        // Erase traces that become less then config_.m_etEpsilon
+        if (i->second < Base::config_.m_etEpsilon)
         {
             traces_map::iterator to_delete = i++;
             active_agent_traces.erase(to_delete);
@@ -107,7 +108,7 @@ inline void lambda_method<Base, Onpolicy>::prepare_update_delete_traces(
     std::for_each(active_agent_traces.begin(), active_agent_traces.end(),
         [&](traces_map::const_reference r) -> void
         {
-            double change = config_->m_alpha * temp * r.second;
+            double change = config_.m_alpha * temp * r.second;
             updates.push_back(make_pair(r.first, active_agent->get_value(r.first) + change));
         }
     );
@@ -139,7 +140,7 @@ void lambda_method<Base, Onpolicy>::update_value_function_impl(
         policy_selection_value, greedy_selection_value
       );
 
-    double temp = reward - v + Base::config_->m_gamma * new_v;
+    double temp = reward - v + Base::config_.m_gamma * new_v;
 
     // Update eligibility trace for state
     // Accumulating traces: e(s) <- e(s) + 1
@@ -156,7 +157,7 @@ void lambda_method<Base, Onpolicy>::update_value_function_impl(
     {
         // Trace found. Update it.
         // Accumulating or replacing traces?
-        if (Base::config_->m_accumulating)
+        if (Base::config_.m_accumulating)
             ++i->second;
         else
             i->second = 1;
@@ -175,9 +176,4 @@ void lambda_method<Base, Onpolicy>::update_value_function_impl(
     active_agent->update(updates);
 }
 
-typedef lambda_method<method_state, true> method_state_onpolicy;
-typedef lambda_method<method_action, true> method_action_onpolicy;
-typedef lambda_method<method_state, false> method_state_offpolicy;
-typedef lambda_method<method_action, false> method_action_offpolicy;
-
-}}
+}}}

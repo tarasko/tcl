@@ -7,26 +7,26 @@ set(detail_fann_src
 	detail/fann/doublefann.c
 	detail/fann/fann_cpp.h)
 
-set(src_double ${src})
-set(src_int ${src})
+set(value_function_src_double ${value_function_src})
+set(value_function_src_int ${value_function_src})
 
-list(REMOVE_ITEM src_double
-	"${CMAKE_CURRENT_SOURCE_DIR}/lookup_table.hpp"
-	"${CMAKE_CURRENT_SOURCE_DIR}/lookup_table.cpp")
+list(REMOVE_ITEM value_function_src_double
+	"${CMAKE_CURRENT_SOURCE_DIR}/value_function/lookup_table.hpp"
+	"${CMAKE_CURRENT_SOURCE_DIR}/value_function/lookup_table.cpp")
 
 add_definitions(-DFANN_NO_DLL -D_CRT_SECURE_NO_WARNINGS)
 
 add_library(tcl.rll.int STATIC
-	${src_int}
+	${src}
 	${policy_src}
-	${value_function_src}
+	${value_function_src_int}
 	${detail_src}
 	${detail_fann_src})
 
 add_library(tcl.rll.double STATIC
-	${src_double}
+	${src}
 	${policy_src}
-	${value_function_src}
+	${value_function_src_double}
 	${detail_src}
 	${detail_fann_src})
 
