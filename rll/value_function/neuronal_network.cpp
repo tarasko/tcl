@@ -33,7 +33,7 @@ neuronal_network::~neuronal_network()
 
 double neuronal_network::get_value(const vector_rllt_csp& st) 
 {
-    assert(!st.empty());
+    assert(!st->empty());
 
     if (!fann_)
         fann_ = create_nn(st->size());

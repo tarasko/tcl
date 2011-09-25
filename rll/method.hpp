@@ -57,7 +57,8 @@ protected:
     virtual void update_value_function_impl(
         const agent_sp& active_agent
       , int active_agent_idx
-      , double new_state_value
+      , double policy_selection_value
+      , double greedy_selection_value
       , double reward
       ) = 0;
 
@@ -86,8 +87,8 @@ protected:
     virtual void update_value_function_impl(
         const agent_sp& active_agent
       , int active_agent_idx
-      , const std::pair<double, vector_rllt_csp>& policy_selection
-      , const std::pair<double, vector_rllt_csp>& greedy_selection
+      , double policy_selection_value
+      , double greedy_selection_value
       , double reward
       ) = 0;
 

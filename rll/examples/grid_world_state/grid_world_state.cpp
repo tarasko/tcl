@@ -164,9 +164,9 @@ int main(int argc, char* argv[])
 
     grid_world gw;
     policy::egreedy pol;
-    method_state_onpolicy m(&gw, &pol, config);
+    method_state_offpolicy m(&gw, &pol, config);
 
-    m.run(5000);
+    m.run(15000);
     gw.print_value_func();
     return 0;
 }

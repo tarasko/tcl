@@ -16,7 +16,7 @@ method_base::method_base(env_base* env, policy::iface* policy, const CConfigPtr&
     , step_(0)
 {
     assert(env && "Environment cannot be null");
-    assert(pol && "Policy cannot be null");
+    assert(policy && "Policy cannot be null");
     assert(config && "Config cannot be null");
 }
 
@@ -129,6 +129,7 @@ void method_state::run_episode_impl()
                 active_agent
               , active_agent_idx
               , policy_selection.first
+              , greedy_selection.first
               , active_agent->release_reward()
               );
 
@@ -154,6 +155,7 @@ void method_state::run_episode_impl()
         update_value_function_impl(
             env->agents()[agentIdx]
           , agentIdx
+          , 0.0
           , 0.0
           , terminal_rewards[agentIdx]
           );
@@ -233,8 +235,8 @@ void method_action::run_episode_impl()
             update_value_function_impl(
                 active_agent
               , active_agent_idx
-              , policy_selection
-              , greedy_selection
+              , policy_selection.first
+              , greedy_selection.first
               , active_agent->release_reward()
               );
         }
@@ -260,14 +262,13 @@ void method_action::run_episode_impl()
     // 6. Iterate over all agents, pretend that next state-action pair will have value function 0.0
     // Update according to last reward.
     // Update value function for last state for each agent according to terminal rewards
-    auto terminal_action = std::make_pair(0.0, vector_rllt_csp());
     for(size_t agentIdx = 0; agentIdx < terminal_rewards.size(); ++agentIdx) 
     {
         update_value_function_impl(
             env->agents()[agentIdx]
           , agentIdx
-          , terminal_action
-          , terminal_action
+          , 0.0
+          , 0.0
           , terminal_rewards[agentIdx]
           );
     }
