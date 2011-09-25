@@ -33,7 +33,7 @@ void state_method_base::run_episode_impl()
         // Get possible next states for current active agent
         auto next_states = env->get_possible_next_states();
         if (next_states.empty())
-            throw CRLException("at least must be one possible next state");
+            throw std::logic_error("at least must be one possible next state");
 
         // Get estimate value for each possible new state
         variants_.resize(next_states.size());

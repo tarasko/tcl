@@ -40,7 +40,7 @@ void action_method_base::run_episode_impl()
         // 1. Get possible actions for active agent.
         auto possible_actions = env->get_possible_actions();
         if (possible_actions.empty())
-            throw CRLException("At least must be one possible next action");
+            throw std::logic_error("at least must be one possible next action");
 
         state_type current_state = env->current_state();
 
