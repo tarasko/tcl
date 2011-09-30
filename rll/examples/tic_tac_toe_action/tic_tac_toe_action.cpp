@@ -27,6 +27,8 @@ private:
     size_t active_agent_idx_;
     state_type state_;
     value_function::lookup_table vf_;
+    policy::egreedy egpolicy_;
+    policy::greedy gpolicy_;
 };
 
 const int tic_tac_toe::WINING_POSITIONS[8][3] = {
@@ -42,10 +44,11 @@ const int tic_tac_toe::WINING_POSITIONS[8][3] = {
 
 tic_tac_toe::tic_tac_toe()
     : state_(9)
+    , vf_()
 {
     // Create value function and method
-    agent_sp XPlayer = make_shared<agent>(&vf_);
-    agent_sp OPlayer = make_shared<agent>(&vf_);
+    agent_sp XPlayer = make_shared<agent>(&vf_, &egpolicy_, agent::OFFPOLICY);
+    agent_sp OPlayer = make_shared<agent>(&vf_, &gpolicy_, agent::ONPOLICY);
     agents().push_back(XPlayer);
     agents().push_back(OPlayer);
 }
@@ -131,7 +134,7 @@ void tic_tac_toe::print_state(rll_type action) const
     cout << "Episode: " << episode()
         << " Step: " <<  step() 
         << " Value: " 
-        << agents()[active_agent_idx_]->get_value(state_.clone().get_internal_rep(action))
+        << agents()[active_agent_idx_]->vf().get_value(state_.clone().get_internal_rep(action))
         << endl;
 
     for (int x=0; x<3; ++x) 
@@ -159,13 +162,12 @@ void tic_tac_toe::print_state(rll_type action) const
 int main() 
 {
     config cfg;
-    cfg.m_gamma = 1.0;
-    cfg.m_accumulating = false;
+    cfg.gamma_ = 1.0;
+    cfg.accumulating_ = false;
 
     tic_tac_toe game;
-    policy::egreedy pol(0.1);
 
-    offpolicy_action_method m(&game, &pol, cfg);
+    action_method m(&game, cfg);
 
     m.run(1000000);
 }

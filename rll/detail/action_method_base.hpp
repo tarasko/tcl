@@ -1,6 +1,8 @@
 #pragma once
 
 #include "method_base.hpp"
+#include "../policy/iface.hpp"
+#include "../environment.hpp"
 
 namespace tcl { namespace rll { namespace detail {
 
@@ -10,7 +12,7 @@ class action_method_base : public method_base
 public:
     typedef state_with_reserved_action state_type;
 
-    action_method_base(env_action* env, policy::iface* policy, const config& config);
+    action_method_base(env_action* env, const config& config);
 
 protected:
     /// @brief Process episode as actions-states method.
@@ -24,5 +26,10 @@ private:
     /// possible state on each step.
     value_action_map variants_; 
 };
+
+inline action_method_base::action_method_base(env_action* env, const config& config) 
+    : method_base(env, config)
+{
+}
 
 }}}

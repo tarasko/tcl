@@ -1,15 +1,9 @@
 #include "state_method_base.hpp"
 #include "../agent.hpp"
-#include "../environment.hpp"
 
 #include <functional>
 
 namespace tcl { namespace rll { namespace detail {
-
-state_method_base::state_method_base(env_state* env, policy::iface* policy, const config& config) 
-    : method_base(env, policy, config)
-{
-}
 
 void state_method_base::run_episode_impl() 
 {
@@ -44,7 +38,7 @@ void state_method_base::run_episode_impl()
           , [&](state_type& state) -> std::pair<double, vector_rllt_sp>
             {
                 vector_rllt_sp rep = state.get_internal_rep();
-                double stateValue = active_agent->get_value(rep);
+                double stateValue = active_agent->vf().get_value(rep);
                 return std::make_pair(stateValue, rep);
             }
           );
@@ -60,8 +54,10 @@ void state_method_base::run_episode_impl()
           );
 
         // Select next state according policy 
-        value_state_map::const_reference policy_selection = policy_->select(variants_);
-        value_state_map::const_reference greedy_selection = variants_.back();
+        value_state_map::const_reference policy_selection = 
+            active_agent->policy().select(variants_);
+        value_state_map::const_reference greedy_selection = 
+            variants_.back();
 
         // Set next state get reward for agent
         // We need to clone state

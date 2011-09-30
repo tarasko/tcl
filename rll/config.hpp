@@ -6,25 +6,26 @@
 
 namespace tcl { namespace rll {
 
+/// @brief Configuration for learing method.
 struct config 
 {
     config() 
-        : m_alpha(0.05)
-        , m_lambda(0.5)
-        , m_gamma(1.0)
-        , m_accumulating(false)
-        , m_etEpsilon(0.001)
+        : alpha_(0.05)
+        , lambda_(0.5)
+        , gamma_(1.0)
+        , accumulating_(false)
+        , traces_epsilon_(0.001)
     {
     }
 
-    double m_alpha;  //!< Alpha - stepsize parameter for RL methods.
-    double m_lambda; //!< Lambda used in eligibility traces.
-    double m_gamma;  //!< Gamma - discount rate for return calculating.
-    bool m_accumulating;  //!< Should use accumulationg trace or replacing.
+    double alpha_;       //!< Alpha - stepsize parameter for RL methods.
+    double lambda_;      //!< Lambda used in eligibility traces.
+    double gamma_;       //!< Gamma - discount rate for return calculating.
+    bool accumulating_;  //!< Should use accumulationg trace or replacing.
 
     /// @brief Epsilon value for eligibility traces.
     /// If trace value for state is less then this it would be eliminated.
-    double m_etEpsilon;
+    double traces_epsilon_;
 };
 
 }}

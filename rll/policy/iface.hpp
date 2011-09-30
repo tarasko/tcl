@@ -7,7 +7,7 @@
 namespace tcl { namespace rll { namespace policy {
 
 /// @brief Policy interface.
-/// Greedy, e-greedy and softmax policies should implement this interface. 
+/// Greedy, e-greedy and softmax policies should implement this interface.
 class iface
 {
 public:
@@ -15,7 +15,7 @@ public:
     typedef std::pair<double, vector_rllt_sp> selection;
     typedef std::vector<selection> variants;
 
-    virtual ~iface() = 0 {}
+    virtual ~iface() {}
 
     /// @brief Select action(or state) from variants.
     virtual const selection& select(const variants& sorted_variants) = 0;

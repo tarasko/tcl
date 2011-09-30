@@ -50,6 +50,7 @@ private:
     vector<int> m_wind;
     state_type state_;
     value_function::lookup_table vf_;
+    policy::egreedy policy_;
 };
 
 grid_world::action grid_world::ACTIONS[] = {
@@ -65,7 +66,7 @@ grid_world::grid_world(void)
     , state_(2)
 {
     // Create value function and agent
-    agents().push_back(make_shared<agent>(&vf_));
+    agents().push_back(make_shared<agent>(&vf_, &policy_));
 
     // Init wind
     m_wind[3] = 1;
@@ -137,12 +138,11 @@ bool grid_world::do_action_assign_rewards(rll_type action)
 int main(int argc, char* argv[]) 
 {
     config cfg;
-    cfg.m_gamma = 1.0;
-    cfg.m_accumulating = false;
+    cfg.gamma_ = 1.0;
+    cfg.accumulating_ = false;
 
     grid_world gw;
-    policy::egreedy pol;
-    onpolicy_action_method m(&gw, &pol, cfg);
+    action_method m(&gw, cfg);
 
     m.run(2000);
     return 0;

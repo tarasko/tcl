@@ -31,7 +31,7 @@ neuronal_network::~neuronal_network()
     fann_destroy(fann_);
 }
 
-double neuronal_network::get_value(const vector_rllt_csp& st) 
+double neuronal_network::get_value(const vector_rllt_csp& st)
 {
     assert(!st->empty());
 
@@ -43,7 +43,7 @@ double neuronal_network::get_value(const vector_rllt_csp& st)
     return static_cast<double>(scale_out(*fann_run(fann_, &in[0])));
 }
 
-void neuronal_network::update(const update_list& ul) 
+void neuronal_network::update(const update_list& ul)
 {
     assert(!ul.empty());
 
@@ -54,7 +54,7 @@ void neuronal_network::update(const update_list& ul)
     typedef vector<pair<vector<double>, double> > internal_update_list;
     internal_update_list intData(ul.size());
 
-    for (update_list::size_type i=0; i<ul.size(); ++i) 
+    for (update_list::size_type i=0; i<ul.size(); ++i)
     {
         /// @todo Resize or reserve + emplace
         // Copy first member
@@ -78,7 +78,7 @@ void neuronal_network::update(const update_list& ul)
     td.output = &output[0];
 
     // And at last set actual pointers
-    for (update_list::size_type i=0; i<ul.size(); ++i) 
+    for (update_list::size_type i=0; i<ul.size(); ++i)
     {
         input[i] = &(intData[i].first[0]);
         output[i] = &(intData[i].second);
@@ -86,13 +86,14 @@ void neuronal_network::update(const update_list& ul)
 
     /// @todo Probably we should return it somehow.
     float mse = fann_train_epoch(fann_, &td);
+    // fann_train_on_data(fann_, &td, 100, 0, 0.01f);
 }
 
 fann* neuronal_network::create_nn(size_t input_size)
 {
     fann_ = fann_create_standard(3, input_size, hidden_, 1);
     if (!fann_)
-        throw std::bad_alloc("fann_create_standart: unable to create network");
+        throw std::runtime_error("fann_create_standart: unable to create network");
 
     fann_set_training_algorithm(fann_, FANN_TRAIN_INCREMENTAL);
     fann_set_activation_function_output(fann_, FANN_SIGMOID_SYMMETRIC);

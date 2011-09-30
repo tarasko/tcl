@@ -4,15 +4,13 @@
 #include "../state.hpp"
 #include "../config.hpp"
 
-#include "../policy/iface.hpp"
-
 namespace tcl { namespace rll { namespace detail {
 
 /// @brief Base class for RL methods.
 class method_base 
 {
 public:
-    method_base(env_base* env, policy::iface* policy, const config& config);
+    method_base(env_base* env, const config& config);
     virtual ~method_base();
 
     /// @brief Run training loop.
@@ -41,11 +39,33 @@ protected:
       ) = 0;
 
     config          config_;     //!< Config information
-    policy::iface*  policy_;     //!< Policy
     env_base*       env_;        //!< Environment
 
     unsigned int    episode_;    //!< Current episode
     unsigned int    step_;       //!< Current step in episode
 };
+
+inline method_base::method_base(env_base* env, const config& config)
+    : config_(config)
+    , env_(env)
+    , episode_(0)
+    , step_(0)
+{
+    assert(env);
+}
+
+inline method_base::~method_base()
+{
+}
+
+inline unsigned int method_base::episode() const
+{
+    return episode_;
+}
+
+inline unsigned int method_base::step() const
+{
+    return step_;
+}
 
 }}}

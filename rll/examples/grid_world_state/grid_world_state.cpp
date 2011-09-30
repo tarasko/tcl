@@ -41,6 +41,7 @@ private:
 	vector<int> m_wind;
     state_type state_;
     value_function::lookup_table vf_;
+    policy::egreedy policy_;
 };
 
 grid_world::action grid_world::ACTIONS[] = {
@@ -53,9 +54,10 @@ grid_world::action grid_world::ACTIONS[] = {
 grid_world::grid_world()
     : m_wind(COLUMNS, 0)
     , state_(2)
+    , policy_(0.15)
 {
     // Create value function and agent
-    agents().push_back(make_shared<agent>(&vf_));
+    agents().push_back(make_shared<agent>(&vf_, &policy_, agent::OFFPOLICY));
 
     // Init wind
     m_wind[3] = 1;
@@ -137,7 +139,7 @@ void grid_world::print_value_func()
         {
             state_[1] = col;
             fout.width(9);
-            fout << agents()[0]->get_value(state_.get_internal_rep()) << " ";
+            fout << agents()[0]->vf().get_value(state_.get_internal_rep()) << " ";
         }
         fout << endl;
     }
@@ -160,11 +162,10 @@ int grid_world::apply_col_bounds(int i_col)
 int main(int argc, char* argv[]) 
 {
     config cfg;
-    cfg.m_gamma = 1.0;
+    cfg.gamma_ = 1.0;
 
     grid_world gw;
-    policy::egreedy pol;
-    offpolicy_state_method m(&gw, &pol, cfg);
+    state_method m(&gw, cfg);
 
     m.run(15000);
     gw.print_value_func();
