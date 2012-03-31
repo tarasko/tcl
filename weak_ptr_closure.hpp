@@ -1,9 +1,10 @@
-/**
- * @file
- *
- * @brief Helper to bind pointer to member function and weak pointer.
- * @author Taras Kozlov
- */
+///
+/// /file
+///
+/// /brief Helper to bind pointer to member function and weak pointer.
+/// /author Taras Kozlov
+/// /todo Use Boost.Move to achieve smooth support for old and new compilers
+/// /todo Add usage example
 
 #if !defined(BOOST_PP_IS_ITERATING)
 #if !defined(TCL_WEAK_PTR_CLOSURE_INCLUDED)
@@ -17,9 +18,11 @@
 #include <boost/function_types/result_type.hpp>
 #include <boost/function_types/is_member_function_pointer.hpp>
 
+#ifdef BOOST_NO_VARIADIC_TEMPLATES
 #include <boost/preprocessor/iteration/iterate.hpp>
 #include <boost/preprocessor/repetition/enum_params.hpp>
 #include <boost/preprocessor/repetition/enum_binary_params.hpp>
+#endif                                                      // BOOST_NO_VARIADIC_TEMPLATES
 
 #ifndef TCL_MAX_CLOSURE_PARAMS
 #define TCL_MAX_CLOSURE_PARAMS 10
