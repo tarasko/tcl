@@ -3,8 +3,10 @@
 ///
 /// /brief Helper to bind pointer to member function and weak pointer.
 /// /author Taras Kozlov
-/// /todo Use Boost.Move to achieve smooth support for old and new compilers
 /// /todo Add usage example
+/// /todo Add support for compilers without void return type support. 
+/// Check BOOST_NO_VOID_RETURNS.
+/// 
 
 #if !defined(BOOST_PP_IS_ITERATING)
 #if !defined(TCL_WEAK_PTR_CLOSURE_INCLUDED)
@@ -13,15 +15,15 @@
 
 #include <boost/config.hpp>
 #include <boost/mpl/assert.hpp>
-#include <boost/utility/enable_if.hpp>
 
 #include <boost/function_types/result_type.hpp>
 #include <boost/function_types/is_member_function_pointer.hpp>
 
 #ifdef BOOST_NO_VARIADIC_TEMPLATES
+#include <boost/move/move.hpp>
 #include <boost/preprocessor/iteration/iterate.hpp>
 #include <boost/preprocessor/repetition/enum_params.hpp>
-#include <boost/preprocessor/repetition/enum_binary_params.hpp>
+#include <boost/preprocessor/repetition/enum.hpp>
 #endif                                                      // BOOST_NO_VARIADIC_TEMPLATES
 
 #ifndef TCL_MAX_CLOSURE_PARAMS
@@ -131,11 +133,13 @@ struct weak_binder
 #ifdef BOOST_NO_VARIADIC_TEMPLATES
 
     // generate set of operator()() with params from 0 to TCL_MAX_CLOSURE_PARAMS
-#    define BOOST_PP_ITERATION_PARAMS_1 (3, (0, TCL_MAX_CLOSURE_PARAMS, "weak_ptr_closure.hpp"))
-#    include BOOST_PP_ITERATE()
+#define BOOST_PP_ITERATION_PARAMS_1 (3, (0, TCL_MAX_CLOSURE_PARAMS, "weak_ptr_closure.hpp"))
+#include BOOST_PP_ITERATE()
 
-#else
+#else                                                       // #ifdef BOOST_NO_VARIADIC_TEMPLATES
 
+    // We assume that rvalue refs are supported for compilers that support 
+    // variadic templates
     template<typename... Args>    
     result_type operator()(Args&&... args) const
     {
@@ -145,7 +149,7 @@ struct weak_binder
         return result_type();
     }
 
-#endif
+#endif                                                      // #ifdef BOOST_NO_VARIADIC_TEMPLATES
 };
 
 }                                                           // namespace detail
@@ -165,13 +169,13 @@ weak_ptr_closure(MemFun memfun, SharedOrWeakPtr smart_ptr)
 
 }                                                         // namespace tcl
 
-#  endif                                                  // TCL_WEAK_PTR_CLOSURE_INCLUDED
+#endif                                                    // TCL_WEAK_PTR_CLOSURE_INCLUDED
 
 #else                                                     // !defined(BOOST_PP_ITERATING)
 
-#  if BOOST_PP_ITERATION() == 0
+// Handle special case for operator()() with zero parameters
+#if BOOST_PP_ITERATION() == 0
 
-/// \todo Add non-const operators as needed
 result_type operator()() const
 {
     if (shared_ptr_type ptr = m_wptr.lock())
@@ -180,17 +184,23 @@ result_type operator()() const
     return result_type();
 }
 
-#  else
+#else                                                     // #if BOOST_PP_ITERATION() == 0
+
+#define DECL_PARAM(z, num, data) BOOST_FWD_REF(P ## num) p ## num
+#define FWD_PARAM(z, num, data) boost::forward<P ## num>(p ## num)
 
 template <BOOST_PP_ENUM_PARAMS(BOOST_PP_ITERATION(), typename P)>
-result_type operator()(BOOST_PP_ENUM_BINARY_PARAMS(BOOST_PP_ITERATION(), P, &p)) const
+result_type operator()(BOOST_PP_ENUM(BOOST_PP_ITERATION(), DECL_PARAM, _)) const
 {
     if (shared_ptr_type ptr = m_wptr.lock())
-        return (ptr.get()->*m_memfun_ptr)(BOOST_PP_ENUM_PARAMS(BOOST_PP_ITERATION(), p));
+        return (ptr.get()->*m_memfun_ptr)(BOOST_PP_ENUM(BOOST_PP_ITERATION(), FWD_PARAM, _));
 
     return result_type();
 }
 
-#  endif
+#undef DECL_PARAM
+#undef FWD_PARAM
 
-#endif                                                      // defined(BOOST_PP_ITERATING)
+#endif                                                    // #if BOOST_PP_ITERATION() == 0
+
+#endif                                                    // defined(BOOST_PP_ITERATING)
