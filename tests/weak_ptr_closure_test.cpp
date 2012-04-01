@@ -1,4 +1,4 @@
-#define BOOST_TEST_MODULE WeakPtrClosureTest
+#define BOOST_TEST_MODULE tcl
 
 #include <tcl/weak_ptr_closure.hpp>
 
