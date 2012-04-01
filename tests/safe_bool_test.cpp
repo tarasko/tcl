@@ -1,7 +1,6 @@
 #include <tcl/safe_bool.hpp>
 
 #include <boost/test/auto_unit_test.hpp>
-#include <vector>
 
 using namespace tcl;
 

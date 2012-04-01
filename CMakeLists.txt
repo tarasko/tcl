@@ -20,5 +20,9 @@ add_subdirectory(allocators)
 add_subdirectory(containers)
 add_subdirectory(tests)
 
+if(WIN32)
+    add_subdirectory(win)
+endif(WIN32)
+
 add_custom_target(tcl SOURCES ${src})
 
