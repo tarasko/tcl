@@ -1,9 +1,28 @@
 ///
-/// /file
+/// \file
 ///
-/// /brief General RAII wrapper with move semantic for uniform resource.
+/// \brief Yet another general RAII wrapper with move semantic for uniform resource.
 ///
-/// /author Taras Kozlov 
+/// This wrapper is suitable for some C API  that we have to deal with. Yes, 
+/// std::unique_ptr allows to provide custom deleter, and basically it can be used to wrap
+/// such stuff as windows handles, but at cost of big syntactic noise.
+/// Imagine we want to wrap HANDLE with null  value as INVALID_HANDLE_VALUE, and with 
+/// CloseHandle deleter. First we have to write functor that wrap CloseHandle, 
+/// since unique_ptr accept type and not function pointer. Second we must use void as type
+/// wrapped by unique_ptr, which is contr-intuitive. And we have to deal with this void* 
+/// every time we get handle from unique_ptr. And third, many API function like to create 
+/// and return handle as parameter, yeah by taking pointer to handle. So we can`t use 
+/// unique_ptr here. This produce more boiler-plate code that we want to avoid.
+///
+/// \author Taras Kozlov 
+///
+/// \todo Add noexcept property everywhere. I believe we can do some heuristic on type
+/// and determine that it is copy and assignment doesn`t throw. In most cases it is true, 
+/// since we usually use it as wrapper for C types provided by system or library API.
+/// I`m also curious does noexcept property impact runtime performace when we deal with
+/// vector<unique_res<...>> ? Cause I know there is difference for containers when type 
+/// move construct has or has not noexcept property.
+/// \todo Probably with template aliasing we can get rid of TCL_UNIQUE_RES macro.
 
 #ifndef TCL_UNIQUE_RES_INCLUDED
 #define TCL_UNIQUE_RES_INCLUDED
